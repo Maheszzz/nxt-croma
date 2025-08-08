@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useContext, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { MenuContext, MenuProvider } from './components/MenuContext';
@@ -22,7 +24,7 @@ const Academic = () => <div>Academic Page</div>;
 const NotFound = () => <div>404 - Not Found</div>;
 
 // Map menu paths to components
-const componentMap: Record<'/' | '/about' | '/finance' | '/travel' | '/academic', React.FC> = {
+const componentMap = {
     '/': Home,
     '/about': About,
     '/finance': Finance,
@@ -41,10 +43,13 @@ function AppRoutes() {
 
     return (
         <Routes>
-            {menuItems.map((item) => {
-                const Component = componentMap[item.path as keyof typeof componentMap] || NotFound;
-                return <Route key={item.id} path={item.path} element={<Component />} />;
-            })}
+            {menuItems.map(item => (
+                <Route
+                    key={item.path}
+                    path={item.path}
+                    element={React.createElement(componentMap[item.path] || NotFound)}
+                />
+            ))}
             <Route path="*" element={<NotFound />} />
         </Routes>
     );

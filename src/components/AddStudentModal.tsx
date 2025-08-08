@@ -1,219 +1,110 @@
-"use client";
+"use client"
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { X } from 'lucide-react';
-import {
-  Box,
-  Button,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  useTheme,
-  Fade,
-  Typography,
-  IconButton,
-  CircularProgress,
-} from '@mui/material';
 
-// Types
-interface FormData {
-  firstname: string;
-  lastname: string;
-  age: string;
-  phone: string;
-  mail: string;
-  role: string;
-}
-
-interface StudentData {
-  firstname: string;
-  lastname: string;
-  age: number;
-  phone: string;
-  mail: string;
-  role: string;
-}
-
-interface AddStudentModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onAddStudent: (data: StudentData) => Promise<void>;
-}
-
-export default function AddStudentModal({ isOpen, onClose, onAddStudent }: AddStudentModalProps) {
-  const [isLoading, setIsLoading] = useState(false);
+const AddStudentModal = ({ isOpen, onClose, onAddStudent }) => {
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<FormData>({
-    defaultValues: {
-      firstname: '',
-      lastname: '',
-      age: '',
-      phone: '',
-      mail: '',
-      role: '',
-    },
-  });
+  } = useForm();
 
-  const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
-
-  const onSubmit = async (data: FormData) => {
-    setIsLoading(true);
-    try {
-      const processedData = {
-        ...data,
-        age: parseInt(data.age) || 0,
-      };
-      await onAddStudent(processedData);
-      reset();
-      onClose();
-    } finally {
-      setIsLoading(false);
-    }
+  const onSubmit = (data) => {
+    onAddStudent({ ...data, date: new Date().toISOString(), age: parseInt(data.age) });
+    reset(); // clears the form
+    onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog
-      open={isOpen}
-      onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-      TransitionComponent={Fade}
-      TransitionProps={{ timeout: 400 }}
-      aria-labelledby="add-student-modal-title"
-      sx={{
-        '& .MuiDialog-paper': {
-          borderRadius: 2,
-          bgcolor: isDarkMode ? 'grey.800' : 'background.paper',
-          boxShadow: theme.shadows[10],
-        },
-      }}
-    >
-      <DialogTitle
-        id="add-student-modal-title"
-        sx={{
-          bgcolor: isDarkMode ? 'grey.900' : 'grey.100',
-          color: isDarkMode ? 'grey.200' : 'text.primary',
-          p: 2,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          borderBottom: `1px solid ${isDarkMode ? 'grey.700' : 'grey.200'}`,
-        }}
-      >
-        <Typography variant="body1" fontWeight={600} sx={{ fontSize: '1.25rem' }}>
-          Add New Student
-        </Typography>
-        <IconButton
-          onClick={onClose}
-          aria-label="Close modal"
-          sx={{ color: isDarkMode ? 'grey.400' : 'grey.600', '&:hover': { color: isDarkMode ? 'grey.200' : 'grey.800' } }}
-        >
-          <X size={20} />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent sx={{ p: 3, pt: 2, pb: 1 }}>
-        <form onSubmit={handleSubmit(onSubmit)} aria-live="polite">
-          {( ['firstname', 'lastname', 'age', 'phone', 'mail', 'role'] as (keyof FormData)[] ).map((field) => (
-            <Box key={field} sx={{ mb: 2 }}>
-              <Typography
-                variant="subtitle2"
-                sx={{ color: isDarkMode ? 'grey.400' : 'grey.600', fontWeight: 500, mb: 1, textTransform: 'capitalize' }}
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl max-w-md w-full border border-white/30">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-900 font-sans">Add New Student</h2>
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-gray-100/50 rounded-full transition-colors"
+              aria-label="Close modal"
+            >
+              <X size={20} className="text-gray-500" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Fields: firstname, lastname, age, phone, mail, role */}
+            {['firstname', 'lastname', 'age', 'phone', 'mail', 'role'].map((field) => (
+              <div key={field}>
+                <label className="block text-sm font-medium text-gray-700 mb-2 capitalize font-sans">
+                  {field === 'mail' ? 'Email' : field}
+                </label>
+
+                <input
+                  type={field === 'age' ? 'number' : field === 'mail' ? 'email' : 'text'}
+                  {...register(field, {
+                    required: `${field === 'mail' ? 'Email' : field} is required`,
+                    ...(field === 'mail' && {
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: 'Invalid email format',
+                      },
+                    }),
+                    ...(field === 'phone' && {
+                      pattern: {
+                        value: /^[0-9\s\-()]{7,15}$/,
+                        message: 'Phone must be 7–15 digits',
+                      },
+                    }),
+                    ...(field === 'age' && {
+                      min: {
+                        value: 1,
+                        message: 'Age must be greater than 0',
+                      },
+                    }),
+                  })}
+                  className={`w-full px-3 py-2 bg-gray-50/50 border rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 placeholder-gray-400 font-sans text-sm ${
+                    errors[field] ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  placeholder={`Enter ${field === 'mail' ? 'email' : field === 'phone' ? 'phone number (e.g., 123-456-7890)' : field}`}
+                  aria-invalid={!!errors[field]}
+                  aria-describedby={errors[field] ? `${field}-error` : undefined}
+                />
+
+                {errors[field] && (
+                  <p id={`${field}-error`} className="mt-2 text-sm text-red-600 font-sans">
+                    {errors[field]?.message}
+                  </p>
+                )}
+              </div>
+            ))}
+
+            <div className="flex justify-end gap-4 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  reset();
+                  onClose();
+                }}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100/50 rounded-lg transition-colors font-medium font-sans"
               >
-                {field === 'mail' ? 'Email' : field}
-              </Typography>
-              <TextField
-                fullWidth
-                type={field === 'age' ? 'number' : field === 'mail' ? 'email' : 'text'}
-                {...register(field, {
-                  required: `${field === 'mail' ? 'Email' : field.charAt(0).toUpperCase() + field.slice(1)} is required`,
-                  ...(field === 'mail' && {
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: 'Invalid email format',
-                    },
-                  }),
-                  ...(field === 'phone' && {
-                    pattern: {
-                      value: /^[0-9\s\-()]{7,15}$/,
-                      message: 'Phone must be 7–15 digits',
-                    },
-                  }),
-                  ...(field === 'age' && {
-                    min: {
-                      value: 1,
-                      message: 'Age must be greater than 0',
-                    },
-                  }),
-                })}
-                error={!!errors[field]}
-                helperText={errors[field]?.message}
-                placeholder={`Enter ${field === 'mail' ? 'email' : field === 'phone' ? 'phone number (e.g., 123-456-7890)' : field}`}
-                InputProps={{
-                  sx: {
-                    bgcolor: isDarkMode ? 'grey.900' : 'grey.50',
-                    borderRadius: 1,
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: isDarkMode ? 'grey.700' : 'grey.300',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: isDarkMode ? 'grey.600' : 'grey.400',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: theme.palette.primary.main,
-                    },
-                  },
-                }}
-                sx={{
-                  '& .MuiInputLabel-root': { color: isDarkMode ? 'grey.400' : 'grey.600' },
-                  '& .MuiInputBase-input': { color: isDarkMode ? 'grey.200' : 'text.primary' },
-                }}
-                aria-invalid={!!errors[field]}
-                aria-describedby={errors[field] ? `${field}-error` : undefined}
-                disabled={isLoading}
-              />
-            </Box>
-          ))}
-          <DialogActions sx={{ p: 0, pt: 2 }}>
-            <Button
-              onClick={() => {
-                reset();
-                onClose();
-              }}
-              variant="outlined"
-              color="inherit"
-              disabled={isLoading}
-              sx={{ borderRadius: 1, px: 2, py: 0.75, color: isDarkMode ? 'grey.400' : 'grey.600' }}
-              aria-label="Cancel"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={isLoading}
-              sx={{
-                borderRadius: 1,
-                px: 2.5,
-                py: 0.75,
-                bgcolor: theme.palette.primary.main,
-                '&:hover': { bgcolor: theme.palette.primary.dark },
-                '&:disabled': { opacity: 0.6 },
-              }}
-              aria-label="Add student"
-            >
-              {isLoading ? <CircularProgress size={20} sx={{ mr: 1 }} /> : 'Add Student'}
-            </Button>
-          </DialogActions>
-        </form>
-      </DialogContent>
-    </Dialog>
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-gradient-to-r from-gray-900 to-gray-600 text-white rounded-lg hover:from-gray-700 hover:to-gray-700 transition-all font-medium font-sans"
+              >
+                Add Student
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   );
-}
+};
+
+export default AddStudentModal;
