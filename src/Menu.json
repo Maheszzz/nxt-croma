@@ -1,27 +1,26 @@
 [
   {
     "id": 1,
-    "label": "Home",
+    "name": "Home",
     "icon": "Home",
     "path": "/"
   },
   {
     "id": 2,
-    "label": "Finance",
+    "name": "Finance",
     "icon": "DollarSign",
     "path": "/finance"
   },
   {
     "id": 3,
-    "label": "Travel",
+    "name": "Travel",
     "icon": "Plane",
     "path": "/travel"
   },
   {
     "id": 4,
-    "label": "Academic",
+    "name": "Academic",
     "icon": "GraduationCap",
     "path": "/academic"
   }
-
 ]
