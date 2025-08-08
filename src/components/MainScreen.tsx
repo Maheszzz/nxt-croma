@@ -57,7 +57,7 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 
 const StyledAppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }) => ({
+})(({ theme, open }: { theme: any; open: boolean }) => ({
   zIndex: theme.zIndex.drawer + 1,
   transition: theme.transitions.create(['width', 'margin', 'box-shadow'], {
     easing: theme.transitions.easing.easeInOut,
@@ -125,9 +125,9 @@ const StyledDrawer = styled(MuiDrawer, {
 
 // --- Error Boundary ---
 class ErrorBoundary extends React.Component {
-  state = { hasError: false, error: null };
+  state = { hasError: false, error: null as Error | null };
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: Error) {
     console.error('ErrorBoundary caught error:', error);
     return { hasError: true, error };
   }
@@ -136,7 +136,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.50' }}>
-          <Paper elevation=6 sx={{ p: 3, maxWidth: 400, width: '100%', borderRadius: 2 }}>
+          <Paper elevation={6} sx={{ p: 3, maxWidth: 400, width: '100%', borderRadius: 2 }}>
             <Typography variant="h6" color="error" gutterBottom>
               Something went wrong
             </Typography>
@@ -517,6 +517,10 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
               </Tooltip>
               <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
                 Students Dashboard
+              </Typography>
+              <List>
+                {menuItems.map((item) => {
+                  const Icon = item.icon;
                   const isActive = activeMenuItem === item.name;
                   return (
                     <ListItem key={item.id} disablePadding sx={{ display: 'block' }}>

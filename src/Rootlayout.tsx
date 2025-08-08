@@ -22,7 +22,7 @@ const Academic = () => <div>Academic Page</div>;
 const NotFound = () => <div>404 - Not Found</div>;
 
 // Map menu paths to components
-const componentMap = {
+const componentMap: Record<'/' | '/about' | '/finance' | '/travel' | '/academic', React.FC> = {
     '/': Home,
     '/about': About,
     '/finance': Finance,
@@ -42,11 +42,12 @@ function AppRoutes() {
     return (
         <Routes>
             {menuItems.map((item) => {
-                const Component = componentMap[item.path] || NotFound;
+                const Component = componentMap[item.path as keyof typeof componentMap] || NotFound;
                 return <Route key={item.id} path={item.path} element={<Component />} />;
             })}
             <Route path="*" element={<NotFound />} />
         </Routes>
+    );
 }
 
 export default function Rootlayout() {

@@ -1,58 +1,69 @@
-// MenuContext.jsx
-import React,{ useState, useEffect, useMemo, createContext } from 'react';
+"use client";
+
+import React, { useState, useEffect, createContext } from 'react';
 import { Home, User, DollarSign, Plane, GraduationCap } from 'lucide-react';
 
-// Create the MenuContext here
-const MenuContext = createContext();
+// Types
+interface MenuItem {
+  id: string;
+  name: string;
+  path: string;
+  icon: React.ComponentType<{ size?: number }>;
+}
 
-export { MenuContext };
+interface MenuContextType {
+  menuItems: MenuItem[];
+}
 
-export function MenuProvider({ children }) {
-    const [menuItems, setMenuItems] = useState([]);
+// Create context with type
+export const MenuContext = createContext<MenuContextType>({
+  menuItems: [],
+});
 
-    useEffect(() => {
-        const fetchMenu = async () => {
-            try {
-                const response = await fetch('/menu.json');
-                if (!response.ok) throw new Error(`Failed to fetch menu: ${response.status}`);
-                const data = await response.json();
-                const mappedData = menuMap(data);
-                setMenuItems(mappedData);
-            } catch (error) {
-                console.error(error);
-                setMenuItems(defaultMenu);
-            }
-        };
-        fetchMenu();
-    }, []);
+interface MenuProviderProps {
+  children: React.ReactNode;
+}
 
-    // Memoize the mapping function and default menu
-    const menuMap = useMemo(() => (data) =>
-        data.map((item) => ({
-            ...item,
-            icon: {
-                Home,
-                User,
-                DollarSign,
-                Plane,
-                GraduationCap,
-            }[item.icon] || User,
-        }))
-        , []);
+// Default menu
+const defaultMenu: MenuItem[] = [
+  { id: '1', name: 'Home', path: '/', icon: Home },
+  { id: '2', name: 'About', path: '/about', icon: User },
+  { id: '3', name: 'Finance', path: '/finance', icon: DollarSign },
+  { id: '4', name: 'Travel', path: '/travel', icon: Plane },
+  { id: '5', name: 'Academic', path: '/academic', icon: GraduationCap },
+];
 
-    const defaultMenu = useMemo(() => [
-        { id: 1, name: 'Home', icon: Home, path: '/' },
-        { id: 2, name: 'About', icon: User, path: '/about' },
-        { id: 3, name: 'Finance', icon: DollarSign, path: '/finance' },
-        { id: 4, name: 'Travel', icon: Plane, path: '/travel' },
-        { id: 5, name: 'Academic', icon: GraduationCap, path: '/academic' },
-    ], []);
+// Icon mapping
+const iconMap: Record<string, React.ComponentType<{ size?: number }>> = {
+  Home,
+  User,
+  DollarSign,
+  Plane,
+  GraduationCap,
+};
 
-    const value = useMemo(() => ({ menuItems }), [menuItems]);
+export function MenuProvider({ children }: MenuProviderProps) {
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(defaultMenu);
 
-    return (
-        <MenuContext.Provider value={value}>
-            {children}
-        </MenuContext.Provider>
-    );
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const response = await fetch('/menu.json');
+        if (!response.ok) throw new Error(`Failed to fetch menu: ${response.status}`);
+        const data: { id: number; name: string; path: string; icon: string }[] = await response.json();
+        const mappedData = data.map((item) => ({
+          id: String(item.id),
+          name: item.name,
+          path: item.path,
+          icon: iconMap[item.icon] || User,
+        }));
+        setMenuItems(mappedData);
+      } catch (error) {
+        console.error('MenuProvider: Failed to fetch menu:', error);
+      }
+    };
+    fetchMenu();
+  }, []);
+
+  return <MenuContext.Provider value={{ menuItems }}>{children}</MenuContext.Provider>;
 }
