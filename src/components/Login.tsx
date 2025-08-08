@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { Mail, Lock } from 'lucide-react';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { Mail, Lock } from "lucide-react";
 import {
   Box,
   Button,
@@ -11,75 +11,75 @@ import {
   CircularProgress,
   Alert,
   Stack,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
+} from "@mui/material";
+import { styled } from "@mui/material/styles";
+
+// ✅ Define form input types
+interface LoginFormInputs {
+  username: string;
+  password: string;
+}
 
 // Styled background
 const GradientBackground = styled(Box)(({ theme }) => ({
-  minHeight: '100vh',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'linear-gradient(135deg, #e0eafc, #cfdef3, #e0e7ff)',
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "linear-gradient(135deg, #e0eafc, #cfdef3, #e0e7ff)",
   padding: theme.spacing(2, 4),
 }));
 
 // Styled login card
 const LoginCard = styled(Box)(({ theme }) => ({
-  width: '100%',
-  maxWidth: '400px',
-  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  backdropFilter: 'blur(10px)',
-  borderRadius: theme.shape.borderRadius * 2,
+  width: "100%",
+  maxWidth: "400px",
+  backgroundColor: "rgba(255, 255, 255, 0.9)",
+  backdropFilter: "blur(10px)",
+  borderRadius: (theme.shape.borderRadius as number) * 2, // ✅ type assertion
   boxShadow: theme.shadows[10],
   padding: theme.spacing(4),
-  transition: 'transform 0.3s ease-in-out',
-  '&:hover': {
-    transform: 'scale(1.02)',
+  transition: "transform 0.3s ease-in-out",
+  "&:hover": {
+    transform: "scale(1.02)",
   },
 }));
 
-export default function Login({ onLogin, onSwitchToSignup }) {
+export default function Login() {
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
     setError,
-  } = useForm({
-    mode: 'onBlur',
+  } = useForm<LoginFormInputs>({
+    mode: "onBlur",
     defaultValues: {
-      username: '',
-      password: '',
+      username: "",
+      password: "",
     },
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [generalError, setGeneralError] = useState('');
+  const [generalError, setGeneralError] = useState("");
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: LoginFormInputs) => {
     setIsLoading(true);
-    setGeneralError('');
-
-    console.log('Form Data:', { username: data.username, password: data.password });
+    setGeneralError("");
 
     try {
       // Simulated API delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // ✅ Next.js way to access env variables
       const correctUsername =
-        process.env.NEXT_PUBLIC_CORRECT_USERNAME || 'testuser@example.com';
+        process.env.NEXT_PUBLIC_CORRECT_USERNAME || "testuser@example.com";
       const correctPassword =
-        process.env.NEXT_PUBLIC_CORRECT_PASSWORD || 'password123';
-
-      console.log('Env Variables:', { correctUsername, correctPassword });
+        process.env.NEXT_PUBLIC_CORRECT_PASSWORD || "password123";
 
       if (!correctUsername || !correctPassword) {
-        throw new Error('Environment variables not loaded correctly');
+        throw new Error("Environment variables not loaded correctly");
       }
 
-      // Trim input to avoid whitespace issues
       const trimmedUsername = data.username.trim();
       const trimmedPassword = data.password.trim();
 
@@ -87,30 +87,25 @@ export default function Login({ onLogin, onSwitchToSignup }) {
         trimmedUsername === correctUsername &&
         trimmedPassword === correctPassword;
 
-      console.log('Validation Result:', {
-        isValid,
-        trimmedUsername,
-        trimmedPassword,
-      });
-
       if (isValid) {
-        sessionStorage.setItem('isLoggedIn', 'true');
-        sessionStorage.setItem('userEmail', trimmedUsername);
+        sessionStorage.setItem("isLoggedIn", "true");
+        sessionStorage.setItem("userEmail", trimmedUsername);
         sessionStorage.setItem(
-          'userName',
-          trimmedUsername.split('@')[0] || trimmedUsername
+          "userName",
+          trimmedUsername.split("@")[0] || trimmedUsername
         );
-        sessionStorage.setItem('lastLogin', new Date().toISOString());
+        sessionStorage.setItem("lastLogin", new Date().toISOString());
 
         reset();
-        onLogin(trimmedUsername, trimmedUsername.split('@')[0] || trimmedUsername);
+        alert("Login successful!");
       } else {
-        setError('username', { message: 'Invalid username or password' });
-        setError('password', { message: ' ' });
+        setError("username", { message: "Invalid username or password" });
+        setError("password", { message: " " });
       }
-    } catch (error) {
-      console.error('Login Error:', error.message);
-      setGeneralError(error.message || 'Login failed. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      setGeneralError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +119,7 @@ export default function Login({ onLogin, onSwitchToSignup }) {
           component="h2"
           align="center"
           gutterBottom
-          sx={{ fontWeight: 'bold', color: 'text.primary' }}
+          sx={{ fontWeight: "bold", color: "text.primary" }}
         >
           Welcome Back
         </Typography>
@@ -137,7 +132,7 @@ export default function Login({ onLogin, onSwitchToSignup }) {
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={3}>
-            {/* Username Field */}
+            {/* Username */}
             <TextField
               fullWidth
               id="username"
@@ -146,19 +141,19 @@ export default function Login({ onLogin, onSwitchToSignup }) {
               disabled={isLoading}
               error={!!errors.username}
               helperText={errors.username?.message}
-              {...register('username', {
-                required: 'Username is required',
+              {...register("username", {
+                required: "Username is required",
                 pattern: {
                   value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                  message: 'Please enter a valid email address',
+                  message: "Please enter a valid email address",
                 },
               })}
               InputProps={{
-                startAdornment: <Mail sx={{ color: 'action.active', mr: 1 }} />,
+                startAdornment: <Mail style={{ color: "gray", marginRight: 8 }} />,
               }}
             />
 
-            {/* Password Field */}
+            {/* Password */}
             <TextField
               fullWidth
               id="password"
@@ -168,15 +163,15 @@ export default function Login({ onLogin, onSwitchToSignup }) {
               disabled={isLoading}
               error={!!errors.password}
               helperText={errors.password?.message}
-              {...register('password', {
-                required: 'Password is required',
+              {...register("password", {
+                required: "Password is required",
                 minLength: {
                   value: 6,
-                  message: 'Password must be at least 6 characters long',
+                  message: "Password must be at least 6 characters long",
                 },
               })}
               InputProps={{
-                startAdornment: <Lock sx={{ color: 'action.active', mr: 1 }} />,
+                startAdornment: <Lock style={{ color: "gray", marginRight: 8 }} />,
               }}
             />
 
@@ -189,50 +184,53 @@ export default function Login({ onLogin, onSwitchToSignup }) {
               sx={{
                 mt: 2,
                 py: 1.5,
-                background: 'linear-gradient(90deg, #4b5bf7, #8b5cf6)',
-                '&:hover': {
-                  background: 'linear-gradient(90deg, #364fc7, #7c3aed)',
+                background: "linear-gradient(90deg, #4b5bf7, #8b5cf6)",
+                "&:hover": {
+                  background: "linear-gradient(90deg, #364fc7, #7c3aed)",
                 },
-                '&:disabled': {
+                "&:disabled": {
                   opacity: 0.5,
-                  cursor: 'not-allowed',
+                  cursor: "not-allowed",
                 },
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               {isLoading ? (
-                <span style={{ display: 'flex', alignItems: 'center' }}>
-                  <CircularProgress size={20} sx={{ color: 'white', mr: 1 }} />{' '}
+                <>
+                  <CircularProgress size={20} sx={{ color: "white", mr: 1 }} />{" "}
                   Signing In...
-                </span>
+                </>
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </Button>
           </Stack>
         </form>
 
-        {/* Switch to Sign Up */}
-        <Typography align="center" sx={{ mt: 2, color: 'text.secondary' }}>
-          Don't have an account?{' '}
+        {/* Switch to signup */}
+        <Typography align="center" sx={{ mt: 2, color: "text.secondary" }}>
+          Don&apos;t have an account?{" "}
           <Button
-            onClick={onSwitchToSignup}
+            onClick={() => alert("Switch to signup")}
             disabled={isLoading}
             sx={{
-              color: 'primary.main',
-              textTransform: 'none',
-              '&:hover': { color: 'primary.dark' },
+              color: "primary.main",
+              textTransform: "none",
+              "&:hover": { color: "primary.dark" },
             }}
           >
             Create one here
           </Button>
         </Typography>
 
-        {/* Demo credentials (remove in production) */}
+        {/* Demo credentials */}
         <Typography
           align="center"
-          sx={{ mt: 2, color: 'text.disabled', fontSize: '0.75rem' }}
+          sx={{ mt: 2, color: "text.disabled", fontSize: "0.75rem" }}
         >
-          Demo Login → Username: <b>testuser@example.com</b>, Password:{' '}
+          Demo Login → Username: <b>testuser@example.com</b>, Password:{" "}
           <b>password123</b>
         </Typography>
       </LoginCard>

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -11,10 +11,23 @@ import {
   TextField,
   Typography,
   CircularProgress,
-  Alert,
   Stack,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
+
+// --- Types ---
+interface SignUpFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+interface SignUpProps {
+  onSignup: () => void;
+  onSwitchToLogin: () => void;
+}
 
 // Styled component for the gradient background
 const GradientBackground = styled(Box)(({ theme }) => ({
@@ -32,7 +45,7 @@ const SignUpCard = styled(Box)(({ theme }) => ({
   maxWidth: '480px',
   backgroundColor: 'rgba(255, 255, 255, 0.9)',
   backdropFilter: 'blur(10px)',
-  borderRadius: theme.shape.borderRadius * 2,
+  borderRadius: Number(theme.shape.borderRadius) * 2,
   boxShadow: theme.shadows[10],
   padding: theme.spacing(4),
   transition: 'transform 0.3s ease-in-out',
@@ -41,7 +54,7 @@ const SignUpCard = styled(Box)(({ theme }) => ({
   },
 }));
 
-export default function SignUp({ onSignup, onSwitchToLogin }) {
+export default function SignUp({ onSignup, onSwitchToLogin }: SignUpProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,14 +82,14 @@ export default function SignUp({ onSignup, onSwitchToLogin }) {
     handleSubmit,
     formState: { errors, isValid },
     watch,
-  } = useForm({
+  } = useForm<SignUpFormData>({
     resolver: yupResolver(signUpSchema),
     mode: 'onChange',
   });
 
   const password = watch('password', '');
 
-  const getPasswordStrength = (password) => {
+  const getPasswordStrength = (password: string) => {
     if (password.length < 6) return { score: 0, text: 'Too short', color: 'error.main', bgColor: 'error.main' };
     if (password.length < 8) return { score: 1, text: 'Weak', color: 'warning.main', bgColor: 'warning.main' };
 
@@ -92,7 +105,7 @@ export default function SignUp({ onSignup, onSwitchToLogin }) {
     return { score: 3, text: 'Strong', color: 'success.main', bgColor: 'success.main' };
   };
 
-  const handleSignup = async (data) => {
+  const handleSignup = async (data: SignUpFormData) => {
     setIsLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -135,7 +148,11 @@ export default function SignUp({ onSignup, onSwitchToLogin }) {
                 helperText={errors.firstName?.message}
                 {...register('firstName')}
                 InputProps={{
-                  startAdornment: <User sx={{ color: 'action.active', mr: 1 }} />,
+                  startAdornment: (
+                    <Box sx={{ color: 'action.active', mr: 1, display: 'flex', alignItems: 'center' }}>
+                      <User />
+                    </Box>
+                  ),
                 }}
               />
               <TextField
@@ -148,7 +165,11 @@ export default function SignUp({ onSignup, onSwitchToLogin }) {
                 helperText={errors.lastName?.message}
                 {...register('lastName')}
                 InputProps={{
-                  startAdornment: <User sx={{ color: 'action.active', mr: 1 }} />,
+                  startAdornment: (
+                    <Box sx={{ color: 'action.active', mr: 1, display: 'flex', alignItems: 'center' }}>
+                      <User />
+                    </Box>
+                  ),
                 }}
               />
             </Box>
@@ -163,7 +184,11 @@ export default function SignUp({ onSignup, onSwitchToLogin }) {
               helperText={errors.email?.message}
               {...register('email')}
               InputProps={{
-                startAdornment: <Mail sx={{ color: 'action.active', mr: 1 }} />,
+                startAdornment: (
+                  <Box sx={{ color: 'action.active', mr: 1, display: 'flex', alignItems: 'center' }}>
+                    <Mail />
+                  </Box>
+                ),
               }}
             />
 
@@ -178,7 +203,11 @@ export default function SignUp({ onSignup, onSwitchToLogin }) {
               helperText={errors.password?.message}
               {...register('password')}
               InputProps={{
-                startAdornment: <Lock sx={{ color: 'action.active', mr: 1 }} />,
+                startAdornment: (
+                  <Box sx={{ color: 'action.active', mr: 1, display: 'flex', alignItems: 'center' }}>
+                    <Lock />
+                  </Box>
+                ),
                 endAdornment: (
                   <Button
                     onClick={() => setShowPassword(!showPassword)}
@@ -191,8 +220,14 @@ export default function SignUp({ onSignup, onSwitchToLogin }) {
             />
             {password && (
               <Box sx={{ mt: 1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Password strength: <span style={{ color: passwordStrength.color }}>{passwordStrength.text}</span>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  Password strength:{' '}
+                  <Typography
+                    component="span"
+                    sx={{ color: passwordStrength.color }}
+                  >
+                    {passwordStrength.text}
+                  </Typography>
                 </Typography>
                 <Box sx={{ height: 6, backgroundColor: 'grey.200', borderRadius: 1, mt: 0.5 }}>
                   <Box
@@ -219,7 +254,11 @@ export default function SignUp({ onSignup, onSwitchToLogin }) {
               helperText={errors.confirmPassword?.message}
               {...register('confirmPassword')}
               InputProps={{
-                startAdornment: <Lock sx={{ color: 'action.active', mr: 1 }} />,
+                startAdornment: (
+                  <Box sx={{ color: 'action.active', mr: 1, display: 'flex', alignItems: 'center' }}>
+                    <Lock />
+                  </Box>
+                ),
                 endAdornment: (
                   <Button
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -249,13 +288,10 @@ export default function SignUp({ onSignup, onSwitchToLogin }) {
                 },
               }}
             >
-              {isLoading ? (
-                <span style={{ display: 'flex', alignItems: 'center' }}>
-                  <CircularProgress size={20} sx={{ color: 'white', mr: 1 }} /> Creating Account...
-                </span>
-              ) : (
-                'Create Account'
-              )}
+              <Stack direction="row" alignItems="center" spacing={1}>
+                {isLoading && <CircularProgress size={20} sx={{ color: 'white' }} />}
+                <Typography>{isLoading ? 'Creating Account...' : 'Create Account'}</Typography>
+              </Stack>
             </Button>
           </Stack>
         </form>

@@ -1,103 +1,141 @@
-"use client"
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-  User, Mail, Lock, Settings, BarChart3, LogOut, Menu, ChevronLeft,
-} from 'lucide-react';
-import PropTypes from 'prop-types';
+  User,
+  Mail,
+  Lock,
+  Settings,
+  BarChart3,
+  LogOut,
+  Menu,
+  ChevronLeft,
+} from "lucide-react";
+import PropTypes from "prop-types";
 import {
-  Box, Typography, IconButton, Drawer, List, ListItem, ListItemButton,
-  ListItemIcon, ListItemText, AppBar, Toolbar, Container, styled,
-  createTheme, ThemeProvider, CssBaseline,
-} from '@mui/material';
+  Box,
+  Typography,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  AppBar,
+  Toolbar,
+  Container,
+  styled,
+  createTheme,
+  ThemeProvider,
+  CssBaseline,
+} from "@mui/material";
 
-// Styled components
+// -------- Types --------
+interface UserType {
+  name?: string;
+  email?: string;
+  lastLogin?: string | number;
+}
+
+interface MainScreenProps {
+  onLogout: () => void;
+  user?: UserType;
+}
+
+// -------- Constants --------
 const drawerWidth = 240;
 
+// -------- Styled Components --------
 const StyledAppBar = styled(AppBar, {
-  shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }) => ({
+  shouldForwardProp: (prop) => prop !== "open",
+})<{ open: boolean }>(({ theme, open }) => ({
   zIndex: theme.zIndex.drawer + 1,
-  transition: theme.transitions.create(['width', 'margin'], {
+  transition: theme.transitions.create(["width", "margin"], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
   ...(open && {
     marginLeft: drawerWidth,
     width: `calc(100% - ${drawerWidth}px)`,
-    transition: theme.transitions.create(['width', 'margin'], {
+    transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen,
     }),
   }),
 }));
 
-const StyledDrawer = styled(Drawer, { shouldForwardProp: (prop) => prop !== 'open' })(({ theme, open }) => ({
+const StyledDrawer = styled(Drawer, {
+  shouldForwardProp: (prop) => prop !== "open",
+})<{ open: boolean }>(({ theme, open }) => ({
   width: drawerWidth,
   flexShrink: 0,
-  whiteSpace: 'nowrap',
-  boxSizing: 'border-box',
+  whiteSpace: "nowrap",
+  boxSizing: "border-box",
   ...(open && {
     width: drawerWidth,
-    transition: theme.transitions.create('width', {
+    transition: theme.transitions.create("width", {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen,
     }),
   }),
   ...(!open && {
-    transition: theme.transitions.create('width', {
+    transition: theme.transitions.create("width", {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
     }),
     width: theme.spacing(7),
-    [theme.breakpoints.up('sm')]: {
+    [theme.breakpoints.up("sm")]: {
       width: theme.spacing(8),
     },
   }),
 }));
 
-const DrawerHeader = styled('div')(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'flex-end',
+const DrawerHeader = styled("div")(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-end",
   padding: theme.spacing(0, 1),
   ...theme.mixins.toolbar,
 }));
 
 const theme = createTheme({
   palette: {
-    primary: { main: '#1a73e8' },
-    background: { default: '#f5f5f5' },
+    primary: { main: "#1a73e8" },
+    background: { default: "#f5f5f5" },
   },
   typography: {
     h6: { fontWeight: 600 },
   },
 });
 
-function MainScreen({ onLogout, user = {} }) {
+// -------- Component --------
+function MainScreen({ onLogout, user = {} }: MainScreenProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  const displayName = user.name || 'Guest';
+  const displayName = user.name || "Guest";
   const lastLogin = user.lastLogin
-    ? new Date(user.lastLogin).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
-    : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    ? new Date(user.lastLogin).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      })
+    : new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
 
   const menuItems = [
-    { name: 'Profile', icon: User },
-    { name: 'Messages', icon: Mail },
-    { name: 'Security', icon: Lock },
-    { name: 'Settings', icon: Settings },
-    { name: 'Analytics', icon: BarChart3 },
+    { name: "Profile", icon: User },
+    { name: "Messages", icon: Mail },
+    { name: "Security", icon: Lock },
+    { name: "Settings", icon: Settings },
+    { name: "Analytics", icon: BarChart3 },
   ];
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      <Box sx={{ display: "flex", minHeight: "100vh" }}>
         {/* AppBar */}
         <StyledAppBar position="fixed" open={isSidebarOpen} color="transparent" elevation={0}>
           <Toolbar>
@@ -106,24 +144,27 @@ function MainScreen({ onLogout, user = {} }) {
               aria-label="open drawer"
               onClick={toggleSidebar}
               edge="start"
-              sx={{ mr: 2, display: { lg: 'none' } }}
+              sx={{ mr: 2, display: { lg: "none" } }}
             >
               <Menu />
             </IconButton>
-            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+            <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
               Dashboard
             </Typography>
           </Toolbar>
         </StyledAppBar>
 
-        {/* Drawer */}
+        {/* Drawer (Mobile) */}
         <StyledDrawer
           variant="temporary"
           open={isSidebarOpen}
           onClose={toggleSidebar}
           sx={{
-            display: { xs: 'block', lg: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            display: { xs: "block", lg: "none" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+            },
           }}
         >
           <DrawerHeader>
@@ -136,7 +177,7 @@ function MainScreen({ onLogout, user = {} }) {
               const Icon = item.icon;
               return (
                 <ListItem key={item.name} disablePadding>
-                  <ListItemButton href="#" sx={{ '&:hover': { bgcolor: 'grey.100' } }}>
+                  <ListItemButton href="#" sx={{ "&:hover": { bgcolor: "grey.100" } }}>
                     <ListItemIcon>
                       <Icon size={20} />
                     </ListItemIcon>
@@ -146,25 +187,31 @@ function MainScreen({ onLogout, user = {} }) {
               );
             })}
             <ListItem disablePadding>
-              <ListItemButton onClick={onLogout} sx={{ '&:hover': { bgcolor: 'error.light' } }}>
+              <ListItemButton onClick={onLogout} sx={{ "&:hover": { bgcolor: "error.light" } }}>
                 <ListItemIcon>
                   <LogOut size={20} />
                 </ListItemIcon>
-                <ListItemText primary="Logout" sx={{ color: 'error.main' }} />
+                <ListItemText primary="Logout" sx={{ color: "error.main" }} />
               </ListItemButton>
             </ListItem>
           </List>
         </StyledDrawer>
 
+        {/* Drawer (Desktop) */}
         <StyledDrawer
           variant="permanent"
           open={true}
           sx={{
-            display: { xs: 'none', lg: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, bgcolor: 'white', boxShadow: 2 },
+            display: { xs: "none", lg: "block" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+              bgcolor: "white",
+              boxShadow: 2,
+            },
           }}
         >
-          <DrawerHeader sx={{ justifyContent: 'center' }}>
+          <DrawerHeader sx={{ justifyContent: "center" }}>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
               MyApp
             </Typography>
@@ -174,7 +221,7 @@ function MainScreen({ onLogout, user = {} }) {
               const Icon = item.icon;
               return (
                 <ListItem key={item.name} disablePadding>
-                  <ListItemButton href="#" sx={{ '&:hover': { bgcolor: 'grey.100' } }}>
+                  <ListItemButton href="#" sx={{ "&:hover": { bgcolor: "grey.100" } }}>
                     <ListItemIcon>
                       <Icon size={20} />
                     </ListItemIcon>
@@ -184,17 +231,17 @@ function MainScreen({ onLogout, user = {} }) {
               );
             })}
             <ListItem disablePadding>
-              <ListItemButton onClick={onLogout} sx={{ '&:hover': { bgcolor: 'error.light' } }}>
+              <ListItemButton onClick={onLogout} sx={{ "&:hover": { bgcolor: "error.light" } }}>
                 <ListItemIcon>
                   <LogOut size={20} />
                 </ListItemIcon>
-                <ListItemText primary="Logout" sx={{ color: 'error.main' }} />
+                <ListItemText primary="Logout" sx={{ color: "error.main" }} />
               </ListItemButton>
             </ListItem>
           </List>
         </StyledDrawer>
 
-        {/* Content Area */}
+        {/* Main Content */}
         <Box component="main" sx={{ flexGrow: 1, p: 3, ml: { lg: `${drawerWidth}px` } }}>
           <Toolbar />
           <Container maxWidth="lg">
@@ -219,6 +266,7 @@ function MainScreen({ onLogout, user = {} }) {
   );
 }
 
+// Optional: still keeps PropTypes for extra runtime validation
 MainScreen.propTypes = {
   onLogout: PropTypes.func.isRequired,
   user: PropTypes.shape({
