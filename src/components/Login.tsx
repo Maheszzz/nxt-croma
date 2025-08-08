@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Mail, Lock } from "lucide-react";
 import {
@@ -14,13 +15,11 @@ import {
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 
-// ✅ Define form input types
 interface LoginFormInputs {
   username: string;
   password: string;
 }
 
-// Styled background
 const GradientBackground = styled(Box)(({ theme }) => ({
   minHeight: "100vh",
   display: "flex",
@@ -30,13 +29,12 @@ const GradientBackground = styled(Box)(({ theme }) => ({
   padding: theme.spacing(2, 4),
 }));
 
-// Styled login card
 const LoginCard = styled(Box)(({ theme }) => ({
   width: "100%",
   maxWidth: "400px",
   backgroundColor: "rgba(255, 255, 255, 0.9)",
   backdropFilter: "blur(10px)",
-  borderRadius: (theme.shape.borderRadius as number) * 2, // ✅ type assertion
+  borderRadius: (theme.shape.borderRadius as number) * 2,
   boxShadow: theme.shadows[10],
   padding: theme.spacing(4),
   transition: "transform 0.3s ease-in-out",
@@ -45,7 +43,13 @@ const LoginCard = styled(Box)(({ theme }) => ({
   },
 }));
 
-export default function Login() {
+interface LoginProps {
+  onLogin: (userEmail?: string, userName?: string) => void;
+  onSwitchToSignup: () => void;
+}
+
+export default function Login({ onLogin, onSwitchToSignup }: LoginProps) {
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -68,9 +72,7 @@ export default function Login() {
     setGeneralError("");
 
     try {
-      // Simulated API delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       const correctUsername =
         process.env.NEXT_PUBLIC_CORRECT_USERNAME || "testuser@example.com";
       const correctPassword =
@@ -97,7 +99,7 @@ export default function Login() {
         sessionStorage.setItem("lastLogin", new Date().toISOString());
 
         reset();
-        alert("Login successful!");
+        onLogin(trimmedUsername, trimmedUsername.split("@")[0] || trimmedUsername);
       } else {
         setError("username", { message: "Invalid username or password" });
         setError("password", { message: " " });
@@ -132,7 +134,6 @@ export default function Login() {
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={3}>
-            {/* Username */}
             <TextField
               fullWidth
               id="username"
@@ -153,7 +154,6 @@ export default function Login() {
               }}
             />
 
-            {/* Password */}
             <TextField
               fullWidth
               id="password"
@@ -175,7 +175,6 @@ export default function Login() {
               }}
             />
 
-            {/* Submit Button */}
             <Button
               type="submit"
               fullWidth
@@ -199,7 +198,7 @@ export default function Login() {
             >
               {isLoading ? (
                 <>
-                  <CircularProgress size={20} sx={{ color: "white", mr: 1 }} />{" "}
+                  <CircularProgress size={20} sx={{ color: "white", mr: 1 }} />
                   Signing In...
                 </>
               ) : (
@@ -209,11 +208,10 @@ export default function Login() {
           </Stack>
         </form>
 
-        {/* Switch to signup */}
         <Typography align="center" sx={{ mt: 2, color: "text.secondary" }}>
           Don&apos;t have an account?{" "}
           <Button
-            onClick={() => alert("Switch to signup")}
+            onClick={onSwitchToSignup}
             disabled={isLoading}
             sx={{
               color: "primary.main",
@@ -225,13 +223,11 @@ export default function Login() {
           </Button>
         </Typography>
 
-        {/* Demo credentials */}
         <Typography
           align="center"
           sx={{ mt: 2, color: "text.disabled", fontSize: "0.75rem" }}
         >
-          Demo Login → Username: <b>testuser@example.com</b>, Password:{" "}
-          <b>password123</b>
+          Demo Login → Username: <b>testuser@example.com</b>, Password: <b>password123</b>
         </Typography>
       </LoginCard>
     </GradientBackground>
