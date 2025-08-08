@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
-  Plus, Search, Edit3, User, LogOut, Trash2, Filter, X, Menu, ChevronLeft,
+  Plus, Search, Edit3, User, Trash2, Filter, X, Menu,
 } from 'lucide-react';
 import AddStudentModal from './AddStudentModal';
 import {
@@ -12,18 +12,36 @@ import {
   IconButton, Menu as MuiMenu, MenuItem, TextField, Table, TableBody, TableCell,
   TableHead, TableRow, TableContainer, Paper, Dialog, DialogTitle, DialogContent,
   DialogActions, InputAdornment, Checkbox, Pagination, CircularProgress, Avatar,
-  createTheme, ThemeProvider, styled, Alert, Tooltip, useMediaQuery,
+  createTheme, ThemeProvider, styled, Alert, Tooltip, useMediaQuery, Theme,
 } from '@mui/material';
 import { MenuContext } from '../components/MenuContext';
 
 // --- Constants ---
-const API_BASE_URL = 'https://687b2e57b4bc7cfbda84e292.mockapi.io/users';
+const API_BASE_URL = 'https://jsonplaceholder.typicode.com/users';
 const LOCAL_KEY = 'localStudents';
 const drawerWidth = 280;
 const miniDrawerWidth = 72;
 
+// --- Types ---
+type Student = {
+  id?: string;
+  mail: string;
+  firstname?: string;
+  lastname?: string;
+  age?: number | string;
+  phone?: string;
+  role?: string;
+  date?: string;
+};
+
+type MainScreenProps = {
+  onLogout: () => void;
+  user: { name?: string; email?: string };
+  children?: React.ReactNode;
+};
+
 // --- Styled Components ---
-const openedMixin = (theme) => ({
+const openedMixin = (theme: Theme) => ({
   width: drawerWidth,
   transition: theme.transitions.create('width', {
     easing: theme.transitions.easing.easeInOut,
@@ -33,7 +51,7 @@ const openedMixin = (theme) => ({
   boxShadow: theme.shadows[8],
 });
 
-const closedMixin = (theme) => ({
+const closedMixin = (theme: Theme) => ({
   transition: theme.transitions.create('width', {
     easing: theme.transitions.easing.easeInOut,
     duration: theme.transitions.duration.leavingScreen,
@@ -57,7 +75,7 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 
 const StyledAppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }: { theme: any; open: boolean }) => ({
+})(({ theme, open }: { theme: Theme; open: boolean }) => ({
   zIndex: theme.zIndex.drawer + 1,
   transition: theme.transitions.create(['width', 'margin', 'box-shadow'], {
     easing: theme.transitions.easing.easeInOut,
@@ -66,18 +84,10 @@ const StyledAppBar = styled(MuiAppBar, {
   ...(open && {
     marginLeft: drawerWidth,
     width: `calc(100% - ${drawerWidth}px)`,
-    transition: theme.transitions.create(['width', 'margin', 'box-shadow'], {
-      easing: theme.transitions.easing.easeInOut,
-      duration: theme.transitions.duration.standard,
-    }),
   }),
   ...(!open && {
     marginLeft: miniDrawerWidth,
     width: `calc(100% - ${miniDrawerWidth}px)`,
-    transition: theme.transitions.create(['width', 'margin', 'box-shadow'], {
-      easing: theme.transitions.easing.easeInOut,
-      duration: theme.transitions.duration.standard,
-    }),
   }),
   '@media (max-width: 600px)': {
     width: '100%',
@@ -87,7 +97,7 @@ const StyledAppBar = styled(MuiAppBar, {
 
 const StyledDrawer = styled(MuiDrawer, {
   shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }) => ({
+})(({ theme, open }: { theme: Theme; open: boolean }) => ({
   width: drawerWidth,
   flexShrink: 0,
   whiteSpace: 'nowrap',
@@ -96,24 +106,7 @@ const StyledDrawer = styled(MuiDrawer, {
     borderRight: `1px solid ${theme.palette.divider}`,
     background: `linear-gradient(180deg, ${theme.palette.grey[900]} 0%, ${theme.palette.grey[800]} 100%)`,
     color: theme.palette.common.white,
-    transition: theme.transitions.create(['width', 'transform'], {
-      easing: theme.transitions.easing.easeInOut,
-      duration: theme.transitions.duration.standard,
-    }),
-    ...(open && {
-      ...openedMixin(theme),
-      '& .MuiDrawer-paper': {
-        ...openedMixin(theme),
-        background: `linear-gradient(180deg, ${theme.palette.grey[900]} 0%, ${theme.palette.grey[800]} 100%)`,
-      },
-    }),
-    ...(!open && {
-      ...closedMixin(theme),
-      '& .MuiDrawer-paper': {
-        ...closedMixin(theme),
-        background: `linear-gradient(180deg, ${theme.palette.grey[900]} 0%, ${theme.palette.grey[800]} 100%)`,
-      },
-    }),
+    ...(open ? openedMixin(theme) : closedMixin(theme)),
   },
   '@media (max-width: 600px)': {
     '& .MuiDrawer-paper': {
@@ -124,10 +117,22 @@ const StyledDrawer = styled(MuiDrawer, {
 }));
 
 // --- Error Boundary ---
-class ErrorBoundary extends React.Component {
-  state = { hasError: false, error: null as Error | null };
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
 
-  static getDerivedStateFromError(error: Error) {
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     console.error('ErrorBoundary caught error:', error);
     return { hasError: true, error };
   }
@@ -182,178 +187,159 @@ const theme = createTheme({
     h6: { fontWeight: 600 },
     body2: { fontSize: '0.875rem' },
   },
-  transitions: {
-    duration: {
-      shortest: 150,
-      shorter: 200,
-      short: 250,
-      standard: 300,
-      complex: 375,
-      enteringScreen: 225,
-      leavingScreen: 195,
-    },
-    easing: {
-      easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      easeOut: 'cubic-bezier(0.0, 0, 0.2, 1)',
-      easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
-      sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
-    },
-  },
-  breakpoints: {
-    values: {
-      xs: 0,
-      sm: 600,
-      md: 900,
-      lg: 1200,
-      xl: 1536,
-    },
-  },
 });
 
-// --- Types ---
-type MainScreenProps = {
-  onLogout: () => void;
-  user: { name?: string; email?: string };
-  children?: React.ReactNode;
-};
-
-// --- Component ---
+// --- Main Component ---
 export default function MainScreen({ onLogout, user, children }: MainScreenProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { menuItems } = useContext(MenuContext);
-  const [students, setStudents] = useState([]);
+
+  // --- State ---
+  const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [profileAnchorEl, setProfileAnchorEl] = useState(null);
+  const [filterType, setFilterType] = useState<'all' | 'firstname' | 'lastname' | 'phone' | 'age' | 'role'>('all');
+  const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [currentStudent, setCurrentStudent] = useState(null);
-  const [filterType, setFilterType] = useState('all');
-  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+  const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [activeMenuItem, setActiveMenuItem] = useState('Academic');
   const [rowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedRows, setSelectedRows] = useState(new Set());
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Update activeMenuItem based on route
-  useEffect(() => {
-    const currentMenuItem = menuItems.find((item) => item.path === pathname);
-    if (currentMenuItem) {
-      setActiveMenuItem(currentMenuItem.name);
-    }
-  }, [pathname, menuItems]);
-
-  // Auto-collapse drawer on mobile
-  useEffect(() => {
-    if (isMobile) {
-      setIsDrawerOpen(false);
-    }
-  }, [isMobile]);
-
-  // Session storage helper
-  const setSession = useCallback((key, value) => {
+  // --- Helper Functions: Local Storage ---
+  const getLocalStudents = useCallback((): Student[] => {
     try {
-      sessionStorage.setItem(key, value);
-    } catch (err) {
-      console.warn('MainScreen: Failed to set session storage:', err);
-    }
-  }, []);
-
-  // Local storage helpers
-  const getLocalStudents = useCallback(() => {
-    try {
-      return JSON.parse(localStorage.getItem(LOCAL_KEY)) || [];
+      const item = localStorage.getItem(LOCAL_KEY);
+      return item ? JSON.parse(item) : [];
     } catch {
-      console.error('MainScreen: Error parsing local students');
+      console.error('Error parsing local students');
       return [];
     }
   }, []);
 
-  const saveLocalStudent = useCallback((student) => {
+  const saveLocalStudent = useCallback((student: Student) => {
     const localStudents = getLocalStudents();
     localStudents.unshift(student);
     try {
       localStorage.setItem(LOCAL_KEY, JSON.stringify(localStudents));
     } catch {
-      console.error('MainScreen: Error saving local student');
+      console.error('Error saving local student');
     }
-  }, []);
+  }, [getLocalStudents]);
 
-  const removeLocalStudent = useCallback((id) => {
+  const removeLocalStudent = useCallback((id: string) => {
     const localStudents = getLocalStudents();
-    const updatedStudents = localStudents.filter((s) => s.id !== id);
+    const updatedStudents = localStudents.filter(s => s.id !== id);
     try {
       localStorage.setItem(LOCAL_KEY, JSON.stringify(updatedStudents));
     } catch {
-      console.error('MainScreen: Error removing local student');
+      console.error('Error removing local student');
     }
+  }, [getLocalStudents]);
+
+  // Transform fetched user to Student type
+  const transformApiUserToStudent = useCallback((user: any): Student => {
+    const [firstname, ...lastnameParts] = user.name ? user.name.split(' ') : ['N/A'];
+    const lastname = lastnameParts.join(' ');
+
+    return {
+      id: user.id?.toString(),
+      mail: user.email || 'N/A',
+      firstname: firstname || 'N/A',
+      lastname: lastname || 'N/A',
+      age: Math.floor(Math.random() * 10) + 18, // random age 18-27
+      phone: user.phone || 'N/A',
+      role: 'Student',
+      date: new Date().toISOString(),
+    };
   }, []);
 
-  // Deduplicate students
-  const deduplicateStudents = useCallback((students) => {
+  const deduplicateStudents = useCallback((students: Student[]) => {
     return Array.from(
-      new Map(students.map((s) => [s.id ? `${s.id}-${s.mail}` : s.mail, s])).values()
+      new Map(students.map(s => [(s.id ? `${s.id}-${s.mail}` : s.mail), s])).values()
     );
   }, []);
 
-  // Fetch students
   const fetchStudents = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(API_BASE_URL);
-      if (!response.ok) throw new Error('Failed to fetch students');
-      const data = await response.json();
+      const res = await fetch(API_BASE_URL);
+      if (!res.ok) throw new Error('Failed to fetch students');
+      const apiUsers = await res.json();
+      const apiStudents = apiUsers.map(transformApiUserToStudent);
       const localStudents = getLocalStudents();
-      const allStudents = [...localStudents, ...data];
-      const uniqueStudents = deduplicateStudents(allStudents);
+      const combined = [...localStudents, ...apiStudents];
+      const uniqueStudents = deduplicateStudents(combined);
       setStudents(uniqueStudents);
-    } catch (err) {
+    } catch {
       setError('Failed to load students. Please try again.');
     } finally {
       setLoading(false);
     }
-  }, [getLocalStudents, deduplicateStudents]);
+  }, [getLocalStudents, deduplicateStudents, transformApiUserToStudent]);
 
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
 
+  // Auto collapse drawer on mobile
+  useEffect(() => {
+    setIsDrawerOpen(!isMobile);
+  }, [isMobile]);
+
+  // Update activeMenuItem on route change
+  useEffect(() => {
+    const currentMenuItem = menuItems.find(item => item.path === pathname);
+    if (currentMenuItem) setActiveMenuItem(currentMenuItem.name);
+  }, [pathname, menuItems]);
+
   // Filter and sort students
   const filteredStudents = useMemo(() => {
-    return students.filter((s) => {
-      const term = searchTerm.toLowerCase().trim();
-      if (!term) return true;
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return students;
+    return students.filter(student => {
       if (filterType === 'all' || filterType === 'firstname') {
-        return String(s.firstname || '').toLowerCase().startsWith(term);
+        return (student.firstname ?? '').toLowerCase().startsWith(term);
       }
-      return String(s[filterType] || '').toLowerCase().includes(term);
+      const value = String(student[filterType] ?? '').toLowerCase();
+      return value.includes(term);
     });
   }, [students, searchTerm, filterType]);
 
   const sortedStudents = useMemo(() => {
     if (!searchTerm) return filteredStudents;
     return [...filteredStudents].sort((a, b) =>
-      String(a.firstname || '').toLowerCase().localeCompare(String(b.firstname || '').toLowerCase())
+      (a.firstname ?? '').toLowerCase().localeCompare((b.firstname ?? '').toLowerCase())
     );
   }, [filteredStudents, searchTerm]);
 
-  // Pagination
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedStudents.length / rowsPerPage);
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedStudents.slice(indexOfFirstRow, indexOfLastRow);
-  const totalPages = Math.ceil(sortedStudents.length / rowsPerPage);
 
-  // Reset pagination on search/filter change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterType]);
+
+  // Helpers
+  const setSession = useCallback((key: string, value: string) => {
+    try {
+      sessionStorage.setItem(key, value);
+    } catch {
+      console.warn('Failed to set session storage');
+    }
+  }, []);
 
   // Handlers
   const handleLogout = () => {
@@ -365,11 +351,11 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
     }
   };
 
-  const handleSearchChange = (e) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
-  const handleAddStudent = async (newStudent) => {
+  const handleAddStudent = async (newStudent: Student) => {
     setError('');
     setSuccess('');
     try {
@@ -381,53 +367,49 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
       if (!response.ok) throw new Error('Failed to add student');
       const addedStudent = await response.json();
       saveLocalStudent(addedStudent);
-      setStudents((prev) => deduplicateStudents([addedStudent, ...prev]));
+      setStudents(prev => deduplicateStudents([addedStudent, ...prev]));
       setSuccess('Student added successfully!');
       setAddModalOpen(false);
       setSearchTerm('');
-    } catch (err) {
+    } catch {
       setError('Failed to add student. Please try again.');
     }
   };
 
-  const handleEditStudent = (student) => {
-    setCurrentStudent({ ...student, id: student.id || student.mail });
+  const handleEditStudent = (student: Student) => {
+    setCurrentStudent({ ...student, id: student.id ?? student.mail });
     setEditModalOpen(true);
   };
 
-  const handleDeleteStudent = async (id) => {
+  const handleDeleteStudent = async (id: string) => {
     if (!window.confirm('Delete this student?')) return;
     setError('');
     setSuccess('');
     try {
-      const response = await fetch(`${API_BASE_URL}/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok && response.status !== 404) {
-        throw new Error('Delete failed');
-      }
-      setStudents((prev) => deduplicateStudents(prev.filter((s) => s.id !== id)));
+      const response = await fetch(`${API_BASE_URL}/${id}`, { method: 'DELETE' });
+      if (!response.ok && response.status !== 404) throw new Error('Delete failed');
+      setStudents(prev => deduplicateStudents(prev.filter(s => s.id !== id)));
       removeLocalStudent(id);
       setSuccess('Student deleted successfully!');
-    } catch (err) {
+    } catch {
       setError('Failed to delete student. Please try again.');
     }
   };
 
-  const handleUpdateStudent = async (e) => {
+  const handleUpdateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentStudent?.id) return;
     setError('');
     setSuccess('');
     try {
       const updateData = {
-        firstname: currentStudent.firstname || '',
-        lastname: currentStudent.lastname || '',
-        age: currentStudent.age || '',
-        phone: currentStudent.phone || '',
-        mail: currentStudent.mail || '',
-        role: currentStudent.role || '',
-        date: currentStudent.date || new Date().toISOString(),
+        firstname: currentStudent.firstname ?? '',
+        lastname: currentStudent.lastname ?? '',
+        age: currentStudent.age ?? '',
+        phone: currentStudent.phone ?? '',
+        mail: currentStudent.mail ?? '',
+        role: currentStudent.role ?? '',
+        date: currentStudent.date ?? new Date().toISOString(),
       };
       const response = await fetch(`${API_BASE_URL}/${currentStudent.id}`, {
         method: 'PUT',
@@ -436,32 +418,32 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
       });
       if (!response.ok) throw new Error('Update failed');
       const updatedStudent = await response.json();
-      setStudents((prev) =>
-        deduplicateStudents(prev.map((s) => (s.id === updatedStudent.id ? updatedStudent : s)))
+      setStudents(prev =>
+        deduplicateStudents(prev.map(s => (s.id === updatedStudent.id ? updatedStudent : s)))
       );
       setSuccess('Student updated successfully!');
       setEditModalOpen(false);
       setCurrentStudent(null);
-    } catch (err) {
+    } catch {
       setError('Failed to update student. Please try again.');
     }
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setCurrentStudent((prev) => ({ ...prev, [name]: value }));
+    setCurrentStudent(prev => (prev ? { ...prev, [name]: value } : null));
   };
 
-  const handleSelectAll = (e) => {
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedRows(new Set(currentRows.map((s) => s.id || s.mail)));
+      setSelectedRows(new Set(currentRows.map(s => s.id ?? s.mail)));
     } else {
       setSelectedRows(new Set());
     }
   };
 
-  const handleSelectRow = (id) => {
-    setSelectedRows((prev) => {
+  const handleSelectRow = (id: string) => {
+    setSelectedRows(prev => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
         newSet.delete(id);
@@ -472,6 +454,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
     });
   };
 
+  // Filter options
   const filterOptions = [
     { key: 'all', label: 'All' },
     { key: 'firstname', label: 'First Name' },
@@ -479,7 +462,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
     { key: 'phone', label: 'Phone' },
     { key: 'age', label: 'Age' },
     { key: 'role', label: 'Role' },
-  ];
+  ] as const;
 
   return (
     <ThemeProvider theme={theme}>
@@ -490,11 +473,11 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
             position="fixed"
             open={isDrawerOpen}
             elevation={isDrawerOpen ? 2 : 1}
-            sx={{ 
-              bgcolor: 'background.paper', 
+            sx={{
+              bgcolor: 'background.paper',
               color: 'text.primary',
               backdropFilter: 'blur(8px)',
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backgroundColor: 'rgba(255,255,255,0.95)',
             }}
           >
             <Toolbar>
@@ -504,22 +487,20 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                   aria-label={isDrawerOpen ? 'Close navigation drawer' : 'Open navigation drawer'}
                   onClick={() => setIsDrawerOpen(!isDrawerOpen)}
                   edge="start"
-                  sx={{ 
-                    mr: 2, 
+                  sx={{
+                    mr: 2,
                     ...(isDrawerOpen && isMobile && { display: 'none' }),
-                    '&:hover': {
-                      bgcolor: 'action.hover',
-                    }
+                    '&:hover': { bgcolor: 'action.hover' },
                   }}
                 >
                   <Menu />
                 </IconButton>
               </Tooltip>
-              <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+              <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
                 Students Dashboard
               </Typography>
-              <List>
-                {menuItems.map((item) => {
+              <List sx={{ display: 'flex', flexDirection: 'row', p: 0, m: 0 }}>
+                {menuItems.map(item => {
                   const Icon = item.icon;
                   const isActive = activeMenuItem === item.name;
                   return (
@@ -536,7 +517,9 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                             px: 2.5,
                             borderRadius: 2,
                             bgcolor: isActive ? 'primary.main' : 'transparent',
-                            '&:hover': { bgcolor: isActive ? 'primary.dark' : 'grey.800' },
+                            '&:hover': {
+                              bgcolor: isActive ? 'primary.dark' : 'grey.800',
+                            },
                             mb: 0.5,
                           }}
                           aria-label={`Navigate to ${item.name}`}
@@ -561,33 +544,82 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                   );
                 })}
               </List>
+            </Toolbar>
+          </StyledAppBar>
 
-              <Box
-                sx={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  width: '100%',
-                  p: 2,
-                  borderTop: 1,
-                  borderColor: 'grey.800',
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'hidden' }}>
-                  <Avatar sx={{ width: 40, height: 40, bgcolor: 'grey.600', flexShrink: 0 }}>
-                    <User size={20} />
-                  </Avatar>
-                  {isDrawerOpen && (
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="body2" color="white" fontWeight={500} noWrap>
-                        {user?.name || 'John Doe'}
-                      </Typography>
-                      <Typography variant="caption" color="grey.400" noWrap>
-                        {user?.email || 'john@example.com'}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
+          <StyledDrawer variant="permanent" open={isDrawerOpen}>
+            <DrawerHeader />
+            <List>
+              {menuItems.map(item => {
+                const Icon = item.icon;
+                const isActive = activeMenuItem === item.name;
+                return (
+                  <ListItem key={item.id} disablePadding sx={{ display: 'block' }}>
+                    <Tooltip title={isDrawerOpen ? '' : item.name} placement="right">
+                      <ListItemButton
+                        onClick={() => {
+                          setActiveMenuItem(item.name);
+                          router.push(item.path);
+                        }}
+                        sx={{
+                          minHeight: 48,
+                          justifyContent: isDrawerOpen ? 'initial' : 'center',
+                          px: 2.5,
+                          borderRadius: 2,
+                          bgcolor: isActive ? 'primary.main' : 'transparent',
+                          '&:hover': {
+                            bgcolor: isActive ? 'primary.dark' : 'grey.800',
+                          },
+                          mb: 0.5,
+                        }}
+                        aria-label={`Navigate to ${item.name}`}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            mr: isDrawerOpen ? 3 : 'auto',
+                            justifyContent: 'center',
+                            color: 'inherit',
+                          }}
+                        >
+                          <Icon size={24} />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={item.name}
+                          sx={{ opacity: isDrawerOpen ? 1 : 0, color: 'white' }}
+                        />
+                      </ListItemButton>
+                    </Tooltip>
+                  </ListItem>
+                );
+              })}
+            </List>
+
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                width: '100%',
+                p: 2,
+                borderTop: 1,
+                borderColor: 'grey.800',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'hidden' }}>
+                <Avatar sx={{ width: 40, height: 40, bgcolor: 'grey.600', flexShrink: 0 }}>
+                  <User size={20} />
+                </Avatar>
+                {isDrawerOpen && (
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="body2" color="white" fontWeight={500} noWrap>
+                      {user?.name ?? 'John Doe'}
+                    </Typography>
+                    <Typography variant="caption" color="grey.400" noWrap>
+                      {user?.email ?? 'john@example.com'}
+                    </Typography>
+                  </Box>
+                )}
               </Box>
             </Box>
           </StyledDrawer>
@@ -639,11 +671,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                     ),
                     endAdornment: searchTerm && (
                       <Tooltip title="Clear search">
-                        <IconButton
-                          onClick={() => setSearchTerm('')}
-                          edge="end"
-                          aria-label="Clear search input"
-                        >
+                        <IconButton onClick={() => setSearchTerm('')} edge="end" aria-label="Clear search input">
                           <X size={20} />
                         </IconButton>
                       </Tooltip>
@@ -668,7 +696,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                 </Tooltip>
                 <Tooltip title="Filter options">
                   <IconButton
-                    onClick={(e) => setFilterAnchorEl(e.currentTarget)}
+                    onClick={e => setFilterAnchorEl(e.currentTarget)}
                     aria-label="Open filter options"
                     disabled={loading}
                   >
@@ -736,81 +764,78 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                       ) : currentRows.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={9} align="center" sx={{ py: 5 }}>
-                            <Typography color="text.secondary">
-                              No students found matching your criteria.
-                            </Typography>
+                            <Typography color="text.secondary">No students found matching your criteria.</Typography>
                           </TableCell>
                         </TableRow>
                       ) : (
-                        currentRows.map((student) => (
-                          <TableRow
-                            key={student.id || student.mail}
-                            hover
-                            sx={{ '&:nth-of-type(odd)': { bgcolor: 'grey.50' }, '&:hover': { bgcolor: 'action.hover' } }}
-                            aria-label={`Student ${student.firstname || 'N/A'} ${student.lastname || ''}`}
-                          >
-                            <TableCell padding="checkbox">
-                              <Checkbox
-                                color="primary"
-                                checked={selectedRows.has(student.id || student.mail)}
-                                onChange={() => handleSelectRow(student.id || student.mail)}
-                                aria-label={`Select ${student.firstname || 'student'}`}
-                              />
-                            </TableCell>
-                            <TableCell id={`firstname-${student.id || student.mail}`}>
-                              {student.firstname || 'N/A'}
-                            </TableCell>
-                            <TableCell>{student.lastname || 'N/A'}</TableCell>
-                            <TableCell>{student.age || 'N/A'}</TableCell>
-                            <TableCell>{student.phone || 'N/A'}</TableCell>
-                            <TableCell>{student.mail || 'N/A'}</TableCell>
-                            <TableCell>
-                              <Typography
-                                component="span"
-                                variant="body2"
-                                sx={{
-                                  bgcolor: 'green.100',
-                                  color: 'green.800',
-                                  px: 1,
-                                  py: 0.5,
-                                  borderRadius: 1,
-                                  fontSize: '0.75rem',
-                                }}
-                              >
-                                {student.role || 'N/A'}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              {student.date ? new Date(student.date).toLocaleDateString() : 'N/A'}
-                            </TableCell>
-                            <TableCell align="center">
-                              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                                <Tooltip title="Edit student">
-                                  <IconButton
-                                    onClick={() => handleEditStudent(student)}
-                                    color="primary"
-                                    size="small"
-                                    aria-label={`Edit ${student.firstname || 'student'}`}
-                                    disabled={loading}
-                                  >
-                                    <Edit3 size={16} />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Delete student">
-                                  <IconButton
-                                    onClick={() => handleDeleteStudent(student.id || student.mail)}
-                                    color="error"
-                                    size="small"
-                                    aria-label={`Delete ${student.firstname || 'student'}`}
-                                    disabled={loading}
-                                  >
-                                    <Trash2 size={16} />
-                                  </IconButton>
-                                </Tooltip>
-                              </Box>
-                            </TableCell>
-                          </TableRow>
-                        ))
+                        currentRows.map(student => {
+                          const idKey = student.id ?? student.mail;
+                          return (
+                            <TableRow
+                              key={idKey}
+                              hover
+                              sx={{ '&:nth-of-type(odd)': { bgcolor: 'grey.50' }, '&:hover': { bgcolor: 'action.hover' } }}
+                              aria-label={`Student ${student.firstname ?? 'N/A'} ${student.lastname ?? ''}`}
+                            >
+                              <TableCell padding="checkbox">
+                                <Checkbox
+                                  color="primary"
+                                  checked={selectedRows.has(idKey)}
+                                  onChange={() => handleSelectRow(idKey)}
+                                  aria-label={`Select ${student.firstname ?? 'student'}`}
+                                />
+                              </TableCell>
+                              <TableCell id={`firstname-${idKey}`}>{student.firstname ?? 'N/A'}</TableCell>
+                              <TableCell>{student.lastname ?? 'N/A'}</TableCell>
+                              <TableCell>{student.age ?? 'N/A'}</TableCell>
+                              <TableCell>{student.phone ?? 'N/A'}</TableCell>
+                              <TableCell>{student.mail ?? 'N/A'}</TableCell>
+                              <TableCell>
+                                <Typography
+                                  component="span"
+                                  variant="body2"
+                                  sx={{
+                                    bgcolor: 'green.100',
+                                    color: 'green.800',
+                                    px: 1,
+                                    py: 0.5,
+                                    borderRadius: 1,
+                                    fontSize: '0.75rem',
+                                  }}
+                                >
+                                  {student.role ?? 'N/A'}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>{student.date ? new Date(student.date).toLocaleDateString() : 'N/A'}</TableCell>
+                              <TableCell align="center">
+                                <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                                  <Tooltip title="Edit student">
+                                    <IconButton
+                                      onClick={() => handleEditStudent(student)}
+                                      color="primary"
+                                      size="small"
+                                      aria-label={`Edit ${student.firstname ?? 'student'}`}
+                                      disabled={loading}
+                                    >
+                                      <Edit3 size={16} />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Delete student">
+                                    <IconButton
+                                      onClick={() => handleDeleteStudent(idKey)}
+                                      color="error"
+                                      size="small"
+                                      aria-label={`Delete ${student.firstname ?? 'student'}`}
+                                      disabled={loading}
+                                    >
+                                      <Trash2 size={16} />
+                                    </IconButton>
+                                  </Tooltip>
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
                       )}
                     </TableBody>
                   </Table>
@@ -822,7 +847,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                   <Pagination
                     count={totalPages}
                     page={currentPage}
-                    onChange={(e, page) => setCurrentPage(page)}
+                    onChange={(_, page) => setCurrentPage(page)}
                     color="primary"
                     siblingCount={1}
                     boundaryCount={1}
@@ -832,6 +857,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
               )}
             </Container>
 
+            {/* Edit Modal */}
             <Dialog
               open={editModalOpen}
               onClose={() => {
@@ -845,21 +871,19 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
               <DialogTitle id="edit-student-dialog-title">Edit Student</DialogTitle>
               <DialogContent>
                 <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {['firstname', 'lastname', 'age', 'phone', 'mail', 'role'].map((field) => (
+                  {['firstname', 'lastname', 'age', 'phone', 'mail', 'role'].map(field => (
                     <TextField
                       key={field}
                       name={field}
                       label={field === 'mail' ? 'Email' : field.charAt(0).toUpperCase() + field.slice(1)}
                       type={field === 'age' ? 'number' : field === 'mail' ? 'email' : 'text'}
-                      value={currentStudent?.[field] || ''}
+                      value={(currentStudent as any)?.[field] ?? ''}
                       onChange={handleInputChange}
                       required={field !== 'role'}
                       fullWidth
                       variant="outlined"
-                      error={currentStudent?.[field] === '' && field !== 'role'}
-                      helperText={
-                        currentStudent?.[field] === '' && field !== 'role' ? 'This field is required' : ''
-                      }
+                      error={(currentStudent as any)?.[field] === '' && field !== 'role'}
+                      helperText={(currentStudent as any)?.[field] === '' && field !== 'role' ? 'This field is required' : ''}
                       aria-required={field !== 'role'}
                       disabled={loading}
                       inputProps={{ 'aria-describedby': error ? 'error-alert' : undefined }}
@@ -887,7 +911,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                     loading ||
                     !currentStudent ||
                     ['firstname', 'lastname', 'age', 'phone', 'mail'].some(
-                      (f) => !currentStudent[f]
+                      (f) => !(currentStudent as any)?.[f]
                     )
                   }
                   aria-label="Save changes"
@@ -897,6 +921,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
               </DialogActions>
             </Dialog>
 
+            {/* Add Modal */}
             <AddStudentModal
               isOpen={addModalOpen}
               onClose={() => setAddModalOpen(false)}

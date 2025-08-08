@@ -1,0 +1,27 @@
+[
+  {
+    "id": 1,
+    "label": "Home",
+    "icon": "Home",
+    "path": "/"
+  },
+  {
+    "id": 2,
+    "label": "Finance",
+    "icon": "DollarSign",
+    "path": "/finance"
+  },
+  {
+    "id": 3,
+    "label": "Travel",
+    "icon": "Plane",
+    "path": "/travel"
+  },
+  {
+    "id": 4,
+    "label": "Academic",
+    "icon": "GraduationCap",
+    "path": "/academic"
+  }
+
+]
