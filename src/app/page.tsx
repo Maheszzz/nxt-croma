@@ -7,12 +7,12 @@ import SignUp from '../components/SignUp';
 import MainScreen from '../components/MainScreen';
 import { MenuProvider } from '../components/MenuContext';
 
-// Placeholder page components (create these in separate files, e.g., HomePage.jsx)
-function HomePage() { return <div>Welcome to Home!</div>; }
-function AboutPage() { return <div>About Us Page</div>; }
-function FinancePage() { return <div>Finance Dashboard</div>; }
-function TravelPage() { return <div>Travel Section</div>; }
-function AcademicPage() { return <div>Academic Tools</div>; }
+// Import page components from separate files
+import HomePage from '../components/pages/HomePage';
+import AboutPage from '../components/pages/AboutPage';
+import FinancePage from '../components/pages/FinancePage';
+import TravelPage from '../components/pages/TravelPage';
+import AcademicPage from '../components/pages/AcademicPage';
 
 export default function App(): React.JSX.Element {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -73,18 +73,6 @@ export default function App(): React.JSX.Element {
     }
   };
 
-  const handleSignup = (email: string, name: string) => {
-    try {
-      sessionStorage.setItem('isLoggedIn', 'true');
-      sessionStorage.setItem('userEmail', email);
-      sessionStorage.setItem('userName', name || email.split('@')[0] || 'Guest');
-      sessionStorage.setItem('lastLogin', new Date().toISOString());
-      setUser({ name: name || email.split('@')[0] || 'Guest', email, lastLogin: new Date().toISOString() });
-      setIsLoggedIn(true);
-    } catch (error) {
-      console.error('Error during signup:', error);
-    }
-  };
 
   // If not logged in, show Login or SignUp
   if (!isLoggedIn) {
@@ -95,7 +83,14 @@ export default function App(): React.JSX.Element {
       />
     ) : (
       <SignUp
-        onSignup={(email, name) => handleSignup(email, name)}
+        onSignup={() => {
+          // SignUp component handles session storage internally
+          // Read from session storage to get user data
+          const email = sessionStorage.getItem('userEmail') || '';
+          const name = sessionStorage.getItem('userName') || '';
+          setUser({ name, email, lastLogin: new Date().toISOString() });
+          setIsLoggedIn(true);
+        }}
         onSwitchToLogin={() => setIsLoginPage(true)}
       />
     );
@@ -106,11 +101,11 @@ export default function App(): React.JSX.Element {
     <MenuProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<MainScreen onLogout={handleLogout} user={user}><HomePage /></MainScreen>} />
-          <Route path="/about" element={<MainScreen onLogout={handleLogout} user={user}><AboutPage /></MainScreen>} />
-          <Route path="/finance" element={<MainScreen onLogout={handleLogout} user={user}><FinancePage /></MainScreen>} />
-          <Route path="/travel" element={<MainScreen onLogout={handleLogout} user={user}><TravelPage /></MainScreen>} />
-          <Route path="/academic" element={<MainScreen onLogout={handleLogout} user={user}><AcademicPage /></MainScreen>} />
+          <Route path="/" element={<MainScreen onLogoutAction={handleLogout} user={user}><HomePage /></MainScreen>} />
+          <Route path="/about" element={<MainScreen onLogoutAction={handleLogout} user={user}><AboutPage /></MainScreen>} />
+          <Route path="/finance" element={<MainScreen onLogoutAction={handleLogout} user={user}><FinancePage /></MainScreen>} />
+          <Route path="/travel" element={<MainScreen onLogoutAction={handleLogout} user={user}><TravelPage /></MainScreen>} />
+          <Route path="/academic" element={<MainScreen onLogoutAction={handleLogout} user={user}><AcademicPage /></MainScreen>} />
           {/* Catch-all for unknown routes */}
           <Route
             path="*"

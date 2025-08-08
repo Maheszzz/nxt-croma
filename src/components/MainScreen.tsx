@@ -34,8 +34,32 @@ type Student = {
   date?: string;
 };
 
+type ApiUser = {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  username?: string;
+  website?: string;
+  company?: {
+    name: string;
+    catchPhrase?: string;
+    bs?: string;
+  };
+  address?: {
+    street?: string;
+    suite?: string;
+    city?: string;
+    zipcode?: string;
+    geo?: {
+      lat?: string;
+      lng?: string;
+    };
+  };
+};
+
 type MainScreenProps = {
-  onLogout: () => void;
+  onLogoutAction: () => void;
   user: { name?: string; email?: string };
   children?: React.ReactNode;
 };
@@ -75,7 +99,7 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 
 const StyledAppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }: { theme: Theme; open: boolean }) => ({
+})< { open: boolean } >(({ theme, open }) => ({
   zIndex: theme.zIndex.drawer + 1,
   transition: theme.transitions.create(['width', 'margin', 'box-shadow'], {
     easing: theme.transitions.easing.easeInOut,
@@ -97,7 +121,7 @@ const StyledAppBar = styled(MuiAppBar, {
 
 const StyledDrawer = styled(MuiDrawer, {
   shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }: { theme: Theme; open: boolean }) => ({
+})(({ theme, open }) => ({
   width: drawerWidth,
   flexShrink: 0,
   whiteSpace: 'nowrap',
@@ -190,7 +214,7 @@ const theme = createTheme({
 });
 
 // --- Main Component ---
-export default function MainScreen({ onLogout, user, children }: MainScreenProps) {
+export default function MainScreen({ onLogoutAction, user, children }: MainScreenProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { menuItems } = useContext(MenuContext);
@@ -246,9 +270,21 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
   }, [getLocalStudents]);
 
   // Transform fetched user to Student type
-  const transformApiUserToStudent = useCallback((user: any): Student => {
-    const [firstname, ...lastnameParts] = user.name ? user.name.split(' ') : ['N/A'];
-    const lastname = lastnameParts.join(' ');
+  const transformApiUserToStudent = useCallback((user: ApiUser): Student => {
+    const fullName = user.name ? user.name.trim() : 'N/A';
+    const nameParts = fullName.split(' ').filter((part: string) => part.length > 0);
+    
+    let firstname = 'N/A';
+    let lastname = 'N/A';
+    
+    if (nameParts.length > 0) {
+      firstname = nameParts[0];
+      if (nameParts.length > 1) {
+        lastname = nameParts.slice(1).join(' ');
+      } else {
+        lastname = '';
+      }
+    }
 
     return {
       id: user.id?.toString(),
@@ -274,7 +310,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
     try {
       const res = await fetch(API_BASE_URL);
       if (!res.ok) throw new Error('Failed to fetch students');
-      const apiUsers = await res.json();
+      const apiUsers: ApiUser[] = await res.json();
       const apiStudents = apiUsers.map(transformApiUserToStudent);
       const localStudents = getLocalStudents();
       const combined = [...localStudents, ...apiStudents];
@@ -342,14 +378,14 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
   }, []);
 
   // Handlers
-  const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
+  const handleLogout = useCallback(() => {
+    if (typeof window !== 'undefined' && window.confirm('Are you sure you want to logout?')) {
       setSession('isLoggedIn', '');
       setSession('userEmail', '');
       setSession('userName', '');
-      onLogout();
+      onLogoutAction();
     }
-  };
+  }, [onLogoutAction, setSession]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -618,6 +654,16 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                     <Typography variant="caption" color="grey.400" noWrap>
                       {user?.email ?? 'john@example.com'}
                     </Typography>
+                    <Button
+                      variant="outlined"
+                      color="inherit"
+                      size="small"
+                      sx={{ mt: 1, color: 'white', borderColor: 'grey.400' }}
+                      onClick={handleLogout}
+                      aria-label="Logout"
+                    >
+                      Logout
+                    </Button>
                   </Box>
                 )}
               </Box>
@@ -871,19 +917,19 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
               <DialogTitle id="edit-student-dialog-title">Edit Student</DialogTitle>
               <DialogContent>
                 <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {['firstname', 'lastname', 'age', 'phone', 'mail', 'role'].map(field => (
+                  {(['firstname', 'lastname', 'age', 'phone', 'mail', 'role'] as const).map(field => (
                     <TextField
                       key={field}
                       name={field}
                       label={field === 'mail' ? 'Email' : field.charAt(0).toUpperCase() + field.slice(1)}
                       type={field === 'age' ? 'number' : field === 'mail' ? 'email' : 'text'}
-                      value={(currentStudent as any)?.[field] ?? ''}
+                      value={(currentStudent as Student)?.[field as keyof Student] ?? ''}
                       onChange={handleInputChange}
                       required={field !== 'role'}
                       fullWidth
                       variant="outlined"
-                      error={(currentStudent as any)?.[field] === '' && field !== 'role'}
-                      helperText={(currentStudent as any)?.[field] === '' && field !== 'role' ? 'This field is required' : ''}
+                      error={(currentStudent as Student)?.[field as keyof Student] === '' && field !== 'role'}
+                      helperText={(currentStudent as Student)?.[field as keyof Student] === '' && field !== 'role' ? 'This field is required' : ''}
                       aria-required={field !== 'role'}
                       disabled={loading}
                       inputProps={{ 'aria-describedby': error ? 'error-alert' : undefined }}
@@ -910,8 +956,8 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                   disabled={
                     loading ||
                     !currentStudent ||
-                    ['firstname', 'lastname', 'age', 'phone', 'mail'].some(
-                      (f) => !(currentStudent as any)?.[f]
+                    (['firstname', 'lastname', 'age', 'phone', 'mail'] as (keyof Student)[]).some(
+                      (f) => !currentStudent?.[f]
                     )
                   }
                   aria-label="Save changes"

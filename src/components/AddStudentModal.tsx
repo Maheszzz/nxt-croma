@@ -108,7 +108,7 @@ export default function AddStudentModal({ isOpen, onClose, onAddStudent }: AddSt
           borderBottom: `1px solid ${isDarkMode ? 'grey.700' : 'grey.200'}`,
         }}
       >
-        <Typography variant="h6" fontWeight={600}>
+        <Typography variant="body1" fontWeight={600} sx={{ fontSize: '1.25rem' }}>
           Add New Student
         </Typography>
         <IconButton
