@@ -12,61 +12,77 @@ import {
   IconButton, Menu as MuiMenu, MenuItem, TextField, Table, TableBody, TableCell,
   TableHead, TableRow, TableContainer, Paper, Dialog, DialogTitle, DialogContent,
   DialogActions, InputAdornment, Checkbox, Pagination, CircularProgress, Avatar,
-  createTheme, ThemeProvider, styled, Alert, Tooltip,
+  createTheme, ThemeProvider, styled, Alert, Tooltip, useMediaQuery,
 } from '@mui/material';
 import { MenuContext } from '../components/MenuContext';
 
 // --- Constants ---
 const API_BASE_URL = 'https://687b2e57b4bc7cfbda84e292.mockapi.io/users';
 const LOCAL_KEY = 'localStudents';
-const drawerWidth = 240;
+const drawerWidth = 280;
+const miniDrawerWidth = 72;
 
 // --- Styled Components ---
 const openedMixin = (theme) => ({
   width: drawerWidth,
   transition: theme.transitions.create('width', {
-    easing: theme.transitions.easing.sharp,
+    easing: theme.transitions.easing.easeInOut,
     duration: theme.transitions.duration.enteringScreen,
   }),
   overflowX: 'hidden',
+  boxShadow: theme.shadows[8],
 });
 
 const closedMixin = (theme) => ({
   transition: theme.transitions.create('width', {
-    easing: theme.transitions.easing.sharp,
+    easing: theme.transitions.easing.easeInOut,
     duration: theme.transitions.duration.leavingScreen,
   }),
   overflowX: 'hidden',
-  width: `calc(${theme.spacing(7)} + 1px)`,
+  width: theme.spacing(7) + 1,
   [theme.breakpoints.up('sm')]: {
-    width: `calc(${theme.spacing(8)} + 1px)`,
+    width: miniDrawerWidth,
   },
+  boxShadow: theme.shadows[2],
 });
 
 const DrawerHeader = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'flex-end',
-  padding: theme.spacing(0, 1),
+  justifyContent: 'space-between',
+  padding: theme.spacing(0, 2),
   ...theme.mixins.toolbar,
+  minHeight: '72px !important',
 }));
 
 const StyledAppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== 'open',
 })(({ theme, open }) => ({
   zIndex: theme.zIndex.drawer + 1,
-  transition: theme.transitions.create(['width', 'margin'], {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
+  transition: theme.transitions.create(['width', 'margin', 'box-shadow'], {
+    easing: theme.transitions.easing.easeInOut,
+    duration: theme.transitions.duration.standard,
   }),
   ...(open && {
     marginLeft: drawerWidth,
     width: `calc(100% - ${drawerWidth}px)`,
-    transition: theme.transitions.create(['width', 'margin'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen,
+    transition: theme.transitions.create(['width', 'margin', 'box-shadow'], {
+      easing: theme.transitions.easing.easeInOut,
+      duration: theme.transitions.duration.standard,
     }),
   }),
+  ...(!open && {
+    marginLeft: miniDrawerWidth,
+    width: `calc(100% - ${miniDrawerWidth}px)`,
+    transition: theme.transitions.create(['width', 'margin', 'box-shadow'], {
+      easing: theme.transitions.easing.easeInOut,
+      duration: theme.transitions.duration.standard,
+    }),
+  }),
+  '@media (max-width: 600px)': {
+    width: '100%',
+    marginLeft: 0,
+  },
 }));
 
 const StyledDrawer = styled(MuiDrawer, {
@@ -76,14 +92,35 @@ const StyledDrawer = styled(MuiDrawer, {
   flexShrink: 0,
   whiteSpace: 'nowrap',
   boxSizing: 'border-box',
-  ...(open && {
-    ...openedMixin(theme),
-    '& .MuiDrawer-paper': openedMixin(theme),
-  }),
-  ...(!open && {
-    ...closedMixin(theme),
-    '& .MuiDrawer-paper': closedMixin(theme),
-  }),
+  '& .MuiDrawer-paper': {
+    borderRight: `1px solid ${theme.palette.divider}`,
+    background: `linear-gradient(180deg, ${theme.palette.grey[900]} 0%, ${theme.palette.grey[800]} 100%)`,
+    color: theme.palette.common.white,
+    transition: theme.transitions.create(['width', 'transform'], {
+      easing: theme.transitions.easing.easeInOut,
+      duration: theme.transitions.duration.standard,
+    }),
+    ...(open && {
+      ...openedMixin(theme),
+      '& .MuiDrawer-paper': {
+        ...openedMixin(theme),
+        background: `linear-gradient(180deg, ${theme.palette.grey[900]} 0%, ${theme.palette.grey[800]} 100%)`,
+      },
+    }),
+    ...(!open && {
+      ...closedMixin(theme),
+      '& .MuiDrawer-paper': {
+        ...closedMixin(theme),
+        background: `linear-gradient(180deg, ${theme.palette.grey[900]} 0%, ${theme.palette.grey[800]} 100%)`,
+      },
+    }),
+  },
+  '@media (max-width: 600px)': {
+    '& .MuiDrawer-paper': {
+      width: '100%',
+      maxWidth: drawerWidth,
+    },
+  },
 }));
 
 // --- Error Boundary ---
@@ -125,13 +162,51 @@ class ErrorBoundary extends React.Component {
 // --- Theme ---
 const theme = createTheme({
   palette: {
-    primary: { main: '#1a73e8' },
-    secondary: { main: '#d32f2f' },
-    background: { default: '#f5f5f5', paper: '#ffffff' },
+    primary: { main: '#1a73e8', light: '#4fc3f7', dark: '#0d47a1' },
+    secondary: { main: '#d32f2f', light: '#ff6659', dark: '#9a0007' },
+    background: { default: '#fafafa', paper: '#ffffff' },
+    grey: {
+      50: '#fafafa',
+      100: '#f5f5f5',
+      200: '#eeeeee',
+      300: '#e0e0e0',
+      400: '#bdbdbd',
+      500: '#9e9e9e',
+      600: '#757575',
+      700: '#616161',
+      800: '#424242',
+      900: '#212121',
+    },
   },
   typography: {
     h6: { fontWeight: 600 },
     body2: { fontSize: '0.875rem' },
+  },
+  transitions: {
+    duration: {
+      shortest: 150,
+      shorter: 200,
+      short: 250,
+      standard: 300,
+      complex: 375,
+      enteringScreen: 225,
+      leavingScreen: 195,
+    },
+    easing: {
+      easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      easeOut: 'cubic-bezier(0.0, 0, 0.2, 1)',
+      easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
+      sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
+    },
+  },
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 900,
+      lg: 1200,
+      xl: 1536,
+    },
   },
 });
 
@@ -164,6 +239,8 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedRows, setSelectedRows] = useState(new Set());
 
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   // Update activeMenuItem based on route
   useEffect(() => {
     const currentMenuItem = menuItems.find((item) => item.path === pathname);
@@ -171,6 +248,13 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
       setActiveMenuItem(currentMenuItem.name);
     }
   }, [pathname, menuItems]);
+
+  // Auto-collapse drawer on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setIsDrawerOpen(false);
+    }
+  }, [isMobile]);
 
   // Session storage helper
   const setSession = useCallback((key, value) => {
@@ -405,8 +489,13 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
           <StyledAppBar
             position="fixed"
             open={isDrawerOpen}
-            elevation={1}
-            sx={{ bgcolor: 'background.paper', color: 'text.primary' }}
+            elevation={isDrawerOpen ? 2 : 1}
+            sx={{ 
+              bgcolor: 'background.paper', 
+              color: 'text.primary',
+              backdropFilter: 'blur(8px)',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            }}
           >
             <Toolbar>
               <Tooltip title={isDrawerOpen ? 'Close drawer' : 'Open drawer'}>
@@ -415,65 +504,19 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                   aria-label={isDrawerOpen ? 'Close navigation drawer' : 'Open navigation drawer'}
                   onClick={() => setIsDrawerOpen(!isDrawerOpen)}
                   edge="start"
-                  sx={{ mr: 2, ...(isDrawerOpen && { display: 'none' }) }}
+                  sx={{ 
+                    mr: 2, 
+                    ...(isDrawerOpen && isMobile && { display: 'none' }),
+                    '&:hover': {
+                      bgcolor: 'action.hover',
+                    }
+                  }}
                 >
                   <Menu />
                 </IconButton>
               </Tooltip>
               <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
                 Students Dashboard
-              </Typography>
-              <Typography
-                variant="subtitle1"
-                color="text.secondary"
-                sx={{ mx: 2, display: { xs: 'none', sm: 'block' } }}
-              >
-                {activeMenuItem}
-              </Typography>
-              <Tooltip title="User profile">
-                <IconButton
-                  onClick={(e) => setProfileAnchorEl(e.currentTarget)}
-                  aria-label="Open user profile menu"
-                >
-                  <User />
-                </IconButton>
-              </Tooltip>
-              <MuiMenu
-                anchorEl={profileAnchorEl}
-                open={Boolean(profileAnchorEl)}
-                onClose={() => setProfileAnchorEl(null)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-              >
-                <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
-                  <LogOut size={16} style={{ marginRight: 8 }} /> Logout
-                </MenuItem>
-              </MuiMenu>
-            </Toolbar>
-          </StyledAppBar>
-
-          <StyledDrawer variant="permanent" open={isDrawerOpen}>
-            <DrawerHeader sx={{ bgcolor: 'grey.900', justifyContent: 'space-between', px: 2 }}>
-              {isDrawerOpen && (
-                <Typography variant="h6" sx={{ fontWeight: 700, color: 'white' }}>
-                  MyApp
-                </Typography>
-              )}
-              <Tooltip title="Close drawer">
-                <IconButton
-                  onClick={() => setIsDrawerOpen(false)}
-                  sx={{ color: 'white' }}
-                  aria-label="Close navigation drawer"
-                >
-                  <ChevronLeft />
-                </IconButton>
-              </Tooltip>
-            </DrawerHeader>
-
-            <Box sx={{ bgcolor: 'grey.900', color: 'white', flexGrow: 1, position: 'relative' }}>
-              <List sx={{ p: 1 }}>
-                {menuItems.map((item) => {
-                  const Icon = item.icon;
                   const isActive = activeMenuItem === item.name;
                   return (
                     <ListItem key={item.id} disablePadding sx={{ display: 'block' }}>
@@ -502,7 +545,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                               color: 'inherit',
                             }}
                           >
-                            <Icon />
+                            <Icon size={24} />
                           </ListItemIcon>
                           <ListItemText
                             primary={item.name}
@@ -528,7 +571,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'hidden' }}>
                   <Avatar sx={{ width: 40, height: 40, bgcolor: 'grey.600', flexShrink: 0 }}>
-                    <User />
+                    <User size={20} />
                   </Avatar>
                   {isDrawerOpen && (
                     <Box sx={{ minWidth: 0 }}>
@@ -550,14 +593,19 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
             {children}
             <Container maxWidth={false} sx={{ py: 3 }}>
               {(error || success) && (
-                <Box sx={{ mb: 3, maxWidth: 600, mx: 'auto' }}>
+                <Box sx={{ mb: 3, maxWidth: 600, mx: 'auto' }} aria-live="polite">
                   {error && (
-                    <Alert severity="error" onClose={() => setError('')}>
+                    <Alert
+                      severity="error"
+                      onClose={() => setError('')}
+                      id="error-alert"
+                      sx={{ mb: success ? 2 : 0 }}
+                    >
                       {error}
                     </Alert>
                   )}
                   {success && (
-                    <Alert severity="success" onClose={() => setSuccess('')}>
+                    <Alert severity="success" onClose={() => setSuccess('')} id="success-alert">
                       {success}
                     </Alert>
                   )}
@@ -599,6 +647,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                   }}
                   sx={{ maxWidth: { md: 400 } }}
                   aria-label={`Search students by ${filterType}`}
+                  inputProps={{ 'aria-describedby': error ? 'error-alert' : undefined }}
                 />
                 <Tooltip title="Add new student">
                   <Button
@@ -607,6 +656,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                     startIcon={<Plus />}
                     onClick={() => setAddModalOpen(true)}
                     sx={{ minWidth: 150 }}
+                    disabled={loading}
                     aria-label="Add new student"
                   >
                     Add Student
@@ -616,8 +666,9 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                   <IconButton
                     onClick={(e) => setFilterAnchorEl(e.currentTarget)}
                     aria-label="Open filter options"
+                    disabled={loading}
                   >
-                    <Filter />
+                    <Filter size={20} />
                   </IconButton>
                 </Tooltip>
                 <MuiMenu
@@ -648,7 +699,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                   <Table aria-label="Students table">
                     <TableHead sx={{ bgcolor: 'grey.100' }}>
                       <TableRow>
-                        <TableCell padding="checkbox">
+                        <TableCell padding="checkbox" scope="col">
                           <Checkbox
                             color="primary"
                             checked={selectedRows.size === currentRows.length && currentRows.length > 0}
@@ -702,7 +753,9 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                                 aria-label={`Select ${student.firstname || 'student'}`}
                               />
                             </TableCell>
-                            <TableCell>{student.firstname || 'N/A'}</TableCell>
+                            <TableCell id={`firstname-${student.id || student.mail}`}>
+                              {student.firstname || 'N/A'}
+                            </TableCell>
                             <TableCell>{student.lastname || 'N/A'}</TableCell>
                             <TableCell>{student.age || 'N/A'}</TableCell>
                             <TableCell>{student.phone || 'N/A'}</TableCell>
@@ -734,16 +787,18 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                                     color="primary"
                                     size="small"
                                     aria-label={`Edit ${student.firstname || 'student'}`}
+                                    disabled={loading}
                                   >
                                     <Edit3 size={16} />
                                   </IconButton>
                                 </Tooltip>
                                 <Tooltip title="Delete student">
                                   <IconButton
-                                    onClick={() => handleDeleteStudent(student.id)}
+                                    onClick={() => handleDeleteStudent(student.id || student.mail)}
                                     color="error"
                                     size="small"
                                     aria-label={`Delete ${student.firstname || 'student'}`}
+                                    disabled={loading}
                                   >
                                     <Trash2 size={16} />
                                   </IconButton>
@@ -802,6 +857,8 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                         currentStudent?.[field] === '' && field !== 'role' ? 'This field is required' : ''
                       }
                       aria-required={field !== 'role'}
+                      disabled={loading}
+                      inputProps={{ 'aria-describedby': error ? 'error-alert' : undefined }}
                     />
                   ))}
                 </Box>
@@ -814,6 +871,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                   }}
                   color="inherit"
                   aria-label="Cancel edit"
+                  disabled={loading}
                 >
                   Cancel
                 </Button>
@@ -822,14 +880,15 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                   variant="contained"
                   color="primary"
                   disabled={
+                    loading ||
                     !currentStudent ||
                     ['firstname', 'lastname', 'age', 'phone', 'mail'].some(
-                      (f) => currentStudent[f] === ''
+                      (f) => !currentStudent[f]
                     )
                   }
                   aria-label="Save changes"
                 >
-                  Save Changes
+                  {loading ? <CircularProgress size={20} sx={{ mr: 1 }} /> : 'Save Changes'}
                 </Button>
               </DialogActions>
             </Dialog>
