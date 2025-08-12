@@ -43,7 +43,7 @@ const LoginCard = styled(Box)(({ theme }) => ({
 }));
 
 interface LoginProps {
-  onLogin: (userEmail?: string, userName?: string) => void;
+  onLogin: (email: string, name?: string) => void;
   onSwitchToSignup: () => void;
 }
 

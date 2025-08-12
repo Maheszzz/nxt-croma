@@ -59,26 +59,28 @@ export default function App() {
     }
   };
 
-  const handleLogin = (email, name) => {
+  const handleLogin = (email: string, name?: string) => {
     try {
       sessionStorage.setItem('isLoggedIn', 'true');
       sessionStorage.setItem('userEmail', email);
-      sessionStorage.setItem('userName', name || email.split('@')[0] || 'Guest');
+      const userName = name || email.split('@')[0] || 'Guest';
+      sessionStorage.setItem('userName', userName);
       sessionStorage.setItem('lastLogin', new Date().toISOString());
-      setUser({ name: name || email.split('@')[0] || 'Guest', email, lastLogin: new Date().toISOString() });
+      setUser({ name: userName, email, lastLogin: new Date().toISOString() });
       setIsLoggedIn(true);
     } catch (error) {
       console.error('Error during login:', error);
     }
   };
 
-  const handleSignup = (email, name) => {
+  const handleSignup = (email: string, name?: string) => {
     try {
       sessionStorage.setItem('isLoggedIn', 'true');
       sessionStorage.setItem('userEmail', email);
-      sessionStorage.setItem('userName', name || email.split('@')[0] || 'Guest');
+      const userName = name || email.split('@')[0] || 'Guest';
+      sessionStorage.setItem('userName', userName);
       sessionStorage.setItem('lastLogin', new Date().toISOString());
-      setUser({ name: name || email.split('@')[0] || 'Guest', email, lastLogin: new Date().toISOString() });
+      setUser({ name: userName, email, lastLogin: new Date().toISOString() });
       setIsLoggedIn(true);
     } catch (error) {
       console.error('Error during signup:', error);

@@ -24,7 +24,7 @@ interface SignUpFormData {
 }
 
 interface SignUpProps {
-  onSignup: () => void;
+  onSignup: (email: string, name?: string) => void;
   onSwitchToLogin: () => void;
 }
 
@@ -110,7 +110,7 @@ export default function SignUp({ onSignup, onSwitchToLogin }: SignUpProps) {
       sessionStorage.setItem("isLoggedIn", "true");
       sessionStorage.setItem("userEmail", data.email);
       sessionStorage.setItem("userName", `${data.firstName} ${data.lastName}`);
-      onSignup();
+      onSignup(data.email, `${data.firstName} ${data.lastName}`);
     } catch {
       // handle error if needed
     } finally {
