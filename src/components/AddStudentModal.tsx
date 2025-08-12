@@ -119,11 +119,22 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({
                           value: /^[0-9\s\-()]{7,15}$/,
                           message: "Phone must be 7–15 digits",
                         },
+                        validate: {
+                          notEmpty: (value) => value.trim() !== "" || "Phone is required",
+                        },
                       }),
                       ...(field === "age" && {
+                        required: "Age is required",
                         min: {
                           value: 1,
                           message: "Age must be greater than 0",
+                        },
+                        max: {
+                          value: 120,
+                          message: "Age must be less than 120",
+                        },
+                        validate: {
+                          isNumber: (value) => !isNaN(Number(value)) || "Age must be a number",
                         },
                       }),
                     })}

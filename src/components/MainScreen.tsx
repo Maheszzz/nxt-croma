@@ -18,7 +18,6 @@ import { CSSObject, Theme } from '@mui/material/styles';
 import { MenuContext } from '../components/MenuContext';
 import type { LucideIcon } from 'lucide-react';
 
-
 // --- Types ---
 interface Student {
   id?: string;
@@ -31,9 +30,20 @@ interface Student {
   date: string;
 }
 
-
 type UnknownObject = { [key: string]: unknown };
 
+interface MenuItemType {
+  id: number;
+  name: string;
+  path: string;
+  icon: LucideIcon;
+}
+
+interface MainScreenProps {
+  onLogout: () => void;
+  user: { name?: string; email?: string } | null;
+  children: ReactNode;
+}
 
 // --- Field Mapping Utility ---
 const normalizeStudentData = (rawStudent: UnknownObject): Student => {
@@ -65,33 +75,22 @@ const normalizeStudentData = (rawStudent: UnknownObject): Student => {
     return 0;
   };
 
-  return {
+  const normalized = {
     id: (rawStudent['id'] as string) || (rawStudent['_id'] as string) || (rawStudent['studentId'] as string) || '',
-    firstname: normalizeField(rawStudent, ['firstname', 'firstName', 'first_name', 'fname', 'FirstName', 'first']),
+    firstname: normalizeField(rawStudent, ['firstname', 'firstName', 'first_name', 'fname', 'FirstName', 'first', 'name']),
     lastname: normalizeField(rawStudent, ['lastname', 'lastName', 'last_name', 'lname', 'LastName', 'last']),
     age: normalizeAge(rawStudent),
-    phone: normalizeField(rawStudent, ['phone', 'phoneNumber', 'phone_number', 'mobile', 'contact', 'Phone']),
+    phone: normalizeField(rawStudent, ['phone', 'phoneNumber', 'phone_number', 'mobile', 'contact', 'Phone', 'telephone']),
     mail: normalizeField(rawStudent, ['mail', 'email', 'emailAddress', 'email_address', 'Email', 'eMail']),
     role: normalizeField(rawStudent, ['role', 'position', 'designation', 'Role', 'studentRole']),
     date: (rawStudent['date'] as string) || (rawStudent['createdAt'] as string) || (rawStudent['created_at'] as string) || new Date().toISOString()
   };
+
+  // Debug: Log normalized data to verify firstname and phone
+  console.log('Normalized student:', normalized);
+
+  return normalized;
 };
-
-
-interface MenuItemType {
-  id: number;
-  name: string;
-  path: string;
-  icon: LucideIcon;
-}
-
-
-interface MainScreenProps {
-  onLogout: () => void;
-  user: { name?: string; email?: string } | null;
-  children: ReactNode;
-}
-
 
 // --- Styled Components ---
 const drawerWidth = 240;
@@ -160,7 +159,6 @@ const StyledDrawer = styled(MuiDrawer, {
   }),
 }));
 
-
 // --- Error Boundary ---
 class ErrorBoundary extends React.Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
   state = { hasError: false, error: null };
@@ -196,7 +194,6 @@ class ErrorBoundary extends React.Component<{ children: ReactNode }, { hasError:
   }
 }
 
-
 // --- Theme ---
 const theme = createTheme({
   palette: {
@@ -209,7 +206,6 @@ const theme = createTheme({
     body2: { fontSize: '0.875rem' },
   },
 });
-
 
 // --- Main Component ---
 export default function MainScreen({ onLogout, user, children }: MainScreenProps) {
@@ -242,6 +238,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
   const getLocalStudents = useCallback(() => {
     try {
       const localData = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]') as Student[];
+      console.log('Local students:', localData); // Debug: Log local storage data
       return localData;
     } catch {
       console.error('MainScreen: Error parsing local students');
@@ -291,6 +288,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
       }
 
       const rawData = await response.json() as UnknownObject[];
+      console.log('Raw API data:', rawData); // Debug: Log raw API response
       const normalizedApiData = rawData.map(normalizeStudentData);
 
       const localStudents = getLocalStudents();
@@ -305,13 +303,11 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
       const uniqueStudents = Array.from(
         new Map(allStudents.map((student) => {
           const key = student.id ? `${student.id}-${student.mail}` : student.mail;
-          if (allStudents.filter((s) => (s.id ? `${s.id}-${s.mail}` : s.mail) === key).length > 1) {
-            console.warn('Duplicate student detected:', student);
-          }
           return [key, student];
         })).values()
       ) as Student[];
 
+      console.log('Final students list:', uniqueStudents); // Debug: Log final student list
       setStudents(uniqueStudents);
     } catch (error) {
       if (error instanceof Error) {
@@ -695,7 +691,6 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {/* FIX: Correct ternary rendering */}
                       {loading ? (
                         <TableRow>
                           <TableCell colSpan={9} align="center" sx={{ py: 5 }}>
@@ -709,7 +704,7 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                         <TableRow>
                           <TableCell colSpan={9} align="center" sx={{ py: 5 }}>
                             <Typography color="text.secondary">
-                              No students found matching your criteria.
+                              {searchTerm ? `No students found matching "${searchTerm}"` : 'No students found'}
                             </Typography>
                           </TableCell>
                         </TableRow>
@@ -723,50 +718,34 @@ export default function MainScreen({ onLogout, user, children }: MainScreenProps
                             <TableCell padding="checkbox">
                               <Checkbox color="primary" />
                             </TableCell>
-                            {/* FIX: Show correct values, fallback to N/A only if missing */}
-                            <TableCell>{student.firstname && student.firstname.trim() ? student.firstname : 'N/A'}</TableCell>
-                            <TableCell>{student.lastname && student.lastname.trim() ? student.lastname : 'N/A'}</TableCell>
-                            <TableCell>{student.age !== undefined && student.age !== null && student.age !== '' ? student.age : 'N/A'}</TableCell>
-                            <TableCell>{student.phone && student.phone.trim() ? student.phone : 'N/A'}</TableCell>
-                            <TableCell>{student.mail && student.mail.trim() ? student.mail : 'N/A'}</TableCell>
+                            <TableCell>{student.firstname?.trim() || '-'}</TableCell>
+                            <TableCell>{student.lastname?.trim() || '-'}</TableCell>
+                            <TableCell>{student.age && student.age !== 0 ? student.age : '-'}</TableCell>
+                            <TableCell>{student.phone?.trim() || '-'}</TableCell>
+                            <TableCell>{student.mail?.trim() || '-'}</TableCell>
                             <TableCell>
                               <Typography
                                 component="span"
                                 variant="body2"
                                 sx={{
-                                  bgcolor: 'green.100',
-                                  color: 'green.800',
+                                  bgcolor: 'primary.light',
+                                  color: 'primary.contrastText',
                                   px: 1,
                                   py: 0.5,
                                   borderRadius: 1,
-                                  fontSize: '0.75rem',
                                 }}
                               >
-                                {student.role && student.role.trim() ? student.role : 'N/A'}
+                                {student.role?.trim() || 'N/A'}
                               </Typography>
                             </TableCell>
-                            <TableCell>
-                              {student.date ? new Date(student.date).toLocaleDateString() : 'N/A'}
-                            </TableCell>
+                            <TableCell>{student.date ? new Date(student.date).toLocaleDateString() : 'N/A'}</TableCell>
                             <TableCell align="center">
-                              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                                <IconButton
-                                  onClick={() => handleEditStudent(student)}
-                                  color="primary"
-                                  size="small"
-                                  aria-label="edit student"
-                                >
-                                  <Edit3 size={16} />
-                                </IconButton>
-                                <IconButton
-                                  onClick={() => handleDeleteStudent(student.id)}
-                                  color="error"
-                                  size="small"
-                                  aria-label="delete student"
-                                >
-                                  <Trash2 size={16} />
-                                </IconButton>
-                              </Box>
+                              <IconButton onClick={() => handleEditStudent(student)}>
+                                <Edit3 size={20} />
+                              </IconButton>
+                              <IconButton onClick={() => handleDeleteStudent(student.id)} color="error">
+                                <Trash2 size={20} />
+                              </IconButton>
                             </TableCell>
                           </TableRow>
                         ))

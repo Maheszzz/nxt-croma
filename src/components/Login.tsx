@@ -48,7 +48,6 @@ interface LoginProps {
 }
 
 export default function Login({ onLogin, onSwitchToSignup }: LoginProps) {
-
   const {
     register,
     handleSubmit,
