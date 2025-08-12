@@ -136,7 +136,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({
                         ? "phone number (e.g., 123-456-7890)"
                         : field
                     }`}
-                    aria-invalid={errors[field as keyof FormInputs] ? "true" : "false"}
+                    aria-invalid={!!errors[field as keyof FormInputs]}
                     aria-describedby={
                       errors[field as keyof FormInputs]
                         ? `${field}-error`

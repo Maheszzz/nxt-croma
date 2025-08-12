@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Mail, Lock } from "lucide-react";
 import {
@@ -49,7 +48,7 @@ interface LoginProps {
 }
 
 export default function Login({ onLogin, onSwitchToSignup }: LoginProps) {
-  const router = useRouter();
+
   const {
     register,
     handleSubmit,

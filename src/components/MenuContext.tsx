@@ -62,7 +62,7 @@ export function MenuProvider({ children }: MenuProviderProps) {
       { id: 2, name: 'About', icon: User, path: '/about' },
       { id: 3, name: 'Finance', icon: DollarSign, path: '/finance' },
       { id: 4, name: 'Travel', icon: Plane, path: '/travel' },
-      { id: 5, name: 'Academic', icon: GraduationCap, path: '/academic' },
+      { id: 5, name: 'Academic', icon: GraduationCap, path: '/academic' }, // <-- correct spelling
     ],
     []
   );
