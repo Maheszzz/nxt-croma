@@ -4,14 +4,14 @@ import React from "react";
 import { useForm, FieldError } from "react-hook-form";
 import { X } from "lucide-react";
 
-// Define types for props
+// Props type
 interface AddStudentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddStudent: (student: StudentData) => void;
 }
 
-// Define types for form data
+// Student data type for storage
 interface StudentData {
   firstname: string;
   lastname: string;
@@ -22,10 +22,11 @@ interface StudentData {
   date: string;
 }
 
+// Form input type (age is string until parsed)
 interface FormInputs {
   firstname: string;
   lastname: string;
-  age: string; // initially string from input, converted later
+  age: string;
   phone: string;
   mail: string;
   role: string;
@@ -64,6 +65,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({
     >
       <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl max-w-md w-full border border-white/30">
         <div className="p-6">
+          {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h2
               id="modal-title"
@@ -81,6 +83,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({
             </button>
           </div>
 
+          {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             {["firstname", "lastname", "age", "phone", "mail", "role"].map(
               (field) => (
@@ -136,7 +139,10 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({
                         ? "phone number (e.g., 123-456-7890)"
                         : field
                     }`}
-                    aria-invalid={!!errors[field as keyof FormInputs]}
+                    // ARIA fix: must be string "true"/"false"
+                    aria-invalid={
+                      errors[field as keyof FormInputs] ? "true" : "false"
+                    }
                     aria-describedby={
                       errors[field as keyof FormInputs]
                         ? `${field}-error`
@@ -150,14 +156,17 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({
                       role="alert"
                       className="mt-2 text-sm text-red-600 font-sans"
                     >
-                      {/* TypeScript fix: errors[field] can be FieldError or undefined, render only message string */}
-                      {(errors[field as keyof FormInputs] as FieldError).message}
+                      {
+                        (errors[field as keyof FormInputs] as FieldError)
+                          .message
+                      }
                     </p>
                   )}
                 </div>
               )
             )}
 
+            {/* Actions */}
             <div className="flex justify-end gap-4 pt-4">
               <button
                 type="button"
